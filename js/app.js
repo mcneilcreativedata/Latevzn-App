@@ -12,9 +12,22 @@
 
 import { SECTIONS, getSection } from './data.js';
 import { startRouter } from './router.js';
+import { addResponse, listResponses } from './db.js';
 
 // The element on the page where every screen is drawn.
 const appEl = document.getElementById('app');
+
+// ---- The one section that is wired up so far -----------------------------
+// For now the section and its prompt live here as plain constants. Note that
+// the address slug (`route`) and the database id (`sectionId`) are allowed to
+// differ — the home screen links to `your-working-method`, but entries are
+// stored under `working-method`.
+const WORKING_METHOD = {
+  route: 'your-working-method', // matches the id in data.js (the web address)
+  sectionId: 'working-method',  // how entries are labelled in the database
+  blockId: 'this-week-noticed', // which prompt within the section
+  prompt: 'This week I noticed:',
+};
 
 // A tiny helper to safely show text without it being treated as HTML.
 function escapeHtml(text) {
@@ -56,6 +69,13 @@ function renderSection(id) {
     return;
   }
 
+  // The one section that is actually built gets its real screen; the rest
+  // still show the placeholder.
+  if (id === WORKING_METHOD.route) {
+    renderWorkingMethod(section);
+    return;
+  }
+
   appEl.innerHTML = `
     <section class="screen">
       <a class="back-link" href="#/">‹ Back</a>
@@ -67,6 +87,89 @@ function renderSection(id) {
       </div>
     </section>
   `;
+}
+
+// ---- Screen: Your Working Method -----------------------------------------
+// Shows the prompt with a writing box and a Save button, then lists past
+// entries (newest first) underneath.
+function renderWorkingMethod(section) {
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      <div class="entry-form">
+        <label class="prompt-label" for="entry-text">${escapeHtml(WORKING_METHOD.prompt)}</label>
+        <textarea id="entry-text" class="entry-input" rows="5"
+          placeholder="Write your reflection…"></textarea>
+        <button id="save-entry" class="save-button" type="button">Save</button>
+      </div>
+
+      <ul id="entries" class="entries"></ul>
+    </section>
+  `;
+
+  const textarea = document.getElementById('entry-text');
+  const saveButton = document.getElementById('save-entry');
+
+  // Save the current text as a new entry, then clear the box and refresh.
+  saveButton.addEventListener('click', async () => {
+    const text = textarea.value.trim();
+    if (!text) {
+      // Nothing written — gently focus the box and do nothing else.
+      textarea.focus();
+      return;
+    }
+
+    saveButton.disabled = true;
+    try {
+      await addResponse({
+        sectionId: WORKING_METHOD.sectionId,
+        blockId: WORKING_METHOD.blockId,
+        text,
+      });
+      textarea.value = '';
+      await refreshEntries();
+      textarea.focus();
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+
+  // Show whatever has been saved before.
+  refreshEntries();
+}
+
+// Re-draw the list of past entries (newest first).
+async function refreshEntries() {
+  const listEl = document.getElementById('entries');
+  if (!listEl) {
+    return;
+  }
+
+  const entries = await listResponses(
+    WORKING_METHOD.sectionId,
+    WORKING_METHOD.blockId
+  );
+
+  if (entries.length === 0) {
+    listEl.innerHTML = `
+      <li class="entries-empty">No entries yet. Your saved reflections will appear here.</li>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = entries.map((entry) => `
+    <li class="entry">
+      <p class="entry-date">${escapeHtml(formatDate(entry.createdAt))}</p>
+      <p class="entry-text">${escapeHtml(entry.text)}</p>
+    </li>
+  `).join('');
+}
+
+// Turn a stored timestamp into a friendly date and time.
+function formatDate(timestamp) {
+  return new Date(timestamp).toLocaleString();
 }
 
 // ---- Decide which screen to draw -----------------------------------------
@@ -85,14 +188,30 @@ function render(route) {
 // can open without an internet connection. We only register it if the
 // browser supports it.
 function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // Relative path so it works on GitHub Pages sub-folders too.
-      navigator.serviceWorker.register('./sw.js').catch((error) => {
-        console.warn('Service worker registration failed:', error);
-      });
-    });
+  if (!('serviceWorker' in navigator)) {
+    return;
   }
+
+  // Was a service worker already in charge when this page loaded? If so, a
+  // later change of controller means a NEW version has taken over, and we
+  // refresh once so the page starts using it. On the very first visit there is
+  // no controller yet, so we skip the refresh and avoid an extra reload.
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded || !hadController) {
+      return;
+    }
+    reloaded = true;
+    window.location.reload();
+  });
+
+  window.addEventListener('load', () => {
+    // Relative path so it works on GitHub Pages sub-folders too.
+    navigator.serviceWorker.register('./sw.js').catch((error) => {
+      console.warn('Service worker registration failed:', error);
+    });
+  });
 }
 
 // ---- Start the app -------------------------------------------------------

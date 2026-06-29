@@ -9,7 +9,7 @@
 // (e.g. "v1" -> "v2"). That tells phones to refresh their saved copy.
 // ============================================================================
 
-const CACHE_NAME = 'latevzn-shell-v3';
+const CACHE_NAME = 'latevzn-shell-v4';
 
 // The files that make up the app shell. These are saved when the app is
 // first opened so it can run offline afterwards.
@@ -22,6 +22,8 @@ const SHELL_FILES = [
   './js/app.js',
   './js/router.js',
   './js/data.js',
+  './js/db.js',
+  './vendor/dexie.min.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',

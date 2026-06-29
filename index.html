@@ -35,6 +35,11 @@
     <p class="intro">Loading…</p>
   </main>
 
+  <!-- Dexie: the small library that saves your writing on the device.
+       Loaded from a local file (not the internet) so the app works offline.
+       This plain script runs first, before the app module below. -->
+  <script src="./vendor/dexie.min.js"></script>
+
   <!-- type="module" lets us split the code into small files that load directly. -->
   <script type="module" src="./js/app.js"></script>
 </body>

@@ -174,3 +174,91 @@ body {
 .placeholder strong {
   color: var(--text);
 }
+
+/* ---- Writing area (Your Working Method) --------------------------------- */
+.entry-form {
+  margin-top: 8px;
+  margin-bottom: 28px;
+}
+
+.prompt-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.entry-input {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.entry-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.save-button {
+  margin-top: 12px;
+  padding: 12px 22px;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  /* A comfortable tap target for fingers. */
+  min-height: 48px;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+
+.save-button:active {
+  transform: scale(0.99);
+}
+
+.save-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---- Past entries list -------------------------------------------------- */
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.entries-empty {
+  color: var(--text-muted);
+}
+
+.entry {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.entry-date {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.entry-text {
+  margin: 0;
+  /* Keep the writer's line breaks and spacing as they typed them. */
+  white-space: pre-wrap;
+  word-break: break-word;
+}
