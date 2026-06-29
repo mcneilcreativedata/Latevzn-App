@@ -9,7 +9,7 @@
 // (e.g. "v1" -> "v2"). That tells phones to refresh their saved copy.
 // ============================================================================
 
-const CACHE_NAME = 'latevzn-shell-v2';
+const CACHE_NAME = 'latevzn-shell-v3';
 
 // The files that make up the app shell. These are saved when the app is
 // first opened so it can run offline afterwards.
@@ -36,19 +36,24 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// ---- Activate: clean up old saved versions ------------------------------
+// ---- Activate: clean up old versions and take control -------------------
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      )
-    )
-  );
-  // Start controlling open pages immediately.
-  self.clients.claim();
+  event.waitUntil((async () => {
+    // 1. Remove caches left over from older versions.
+    const names = await caches.keys();
+    await Promise.all(
+      names
+        .filter((name) => name !== CACHE_NAME)
+        .map((name) => caches.delete(name))
+    );
+
+    // 2. Take control of any pages that are already open right away (instead
+    //    of waiting for them to be closed and reopened). Combined with
+    //    skipWaiting() on install, this means the new worker becomes the
+    //    active one as soon as it is installed, so the next time the app is
+    //    opened it already runs this version — no need to reinstall.
+    await self.clients.claim();
+  })());
 });
 
 // ---- Fetch: serve files from the cache, falling back to the network -----
