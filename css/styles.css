@@ -1,0 +1,176 @@
+/* ==========================================================================
+   Latevzn — styles
+   --------------------------------------------------------------------------
+   A clean, neutral, mobile-first look. The colours are defined as
+   "variables" near the top so they are easy to change in one place.
+   The app automatically follows the phone's light or dark setting.
+   ========================================================================== */
+
+/* ---- Colour palette: light mode (the default) --------------------------- */
+:root {
+  --bg: #faf9f7;          /* page background */
+  --surface: #ffffff;     /* cards and panels */
+  --text: #1d1b18;        /* main text */
+  --text-muted: #6c6760;  /* softer secondary text */
+  --border: #e6e2dc;      /* hairline borders */
+  --accent: #8a6d4b;      /* warm, neutral highlight */
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  --max-width: 680px;     /* keeps lines readable on big screens */
+  --radius: 14px;
+}
+
+/* ---- Colour palette: dark mode (used automatically on dark phones) ------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16151a;
+    --surface: #211f27;
+    --text: #f2efe9;
+    --text-muted: #a7a29b;
+    --border: #322f3a;
+    --accent: #c9a87c;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ---- Base resets --------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  line-height: 1.5;
+  /* Respect the phone's notch / rounded corners. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* ---- Header -------------------------------------------------------------- */
+.app-header {
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+.app-title {
+  display: block;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 16px 20px;
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* ---- Main content area --------------------------------------------------- */
+.app-main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 20px 20px 48px;
+}
+
+.screen {
+  animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.intro {
+  color: var(--text-muted);
+  margin: 0 0 20px;
+}
+
+/* ---- Home screen: section list ------------------------------------------ */
+.card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.card-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  text-decoration: none;
+  /* A comfortable tap target for fingers. */
+  min-height: 56px;
+  transition: transform 0.08s ease, border-color 0.15s ease;
+}
+
+.card-link:active {
+  transform: scale(0.99);
+  border-color: var(--accent);
+}
+
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.card-arrow {
+  color: var(--text-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* ---- Section placeholder screen ----------------------------------------- */
+.back-link {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.screen-title {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+  font-weight: 650;
+}
+
+.placeholder {
+  margin-top: 16px;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+}
+
+.placeholder p {
+  margin: 0 0 8px;
+}
+
+.placeholder p:last-child {
+  margin-bottom: 0;
+}
+
+.placeholder strong {
+  color: var(--text);
+}

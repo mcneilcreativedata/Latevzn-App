@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Makes the app size itself nicely on phones. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+  <title>Latevzn</title>
+  <meta name="description" content="Latevzn — a personal photography reflection journal." />
+
+  <!-- The browser bar colour. Two versions so it suits light and dark phones. -->
+  <meta name="theme-color" content="#faf9f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#16151a" media="(prefers-color-scheme: dark)" />
+
+  <!-- Browser tab / bookmark icon. -->
+  <link rel="icon" href="./icons/icon-192.png" />
+
+  <!-- Lets the app be installed and behave like a real app on a phone. -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+
+  <!-- Icon used when added to an iPhone home screen. -->
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Latevzn" />
+
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="app-title" href="#/">Latevzn</a>
+  </header>
+
+  <!-- Every screen is drawn inside here by js/app.js. -->
+  <main id="app" class="app-main">
+    <p class="intro">Loading…</p>
+  </main>
+
+  <!-- type="module" lets us split the code into small files that load directly. -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
