@@ -9,7 +9,7 @@
 // (e.g. "v1" -> "v2"). That tells phones to refresh their saved copy.
 // ============================================================================
 
-const CACHE_NAME = 'latevzn-shell-v1';
+const CACHE_NAME = 'latevzn-shell-v2';
 
 // The files that make up the app shell. These are saved when the app is
 // first opened so it can run offline afterwards.
@@ -60,11 +60,15 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For page navigations, try the network first, then fall back to the
-  // saved home page so the app always opens (even offline).
+  // For page navigations, serve the saved page from the cache FIRST so the app
+  // opens with no network attempt at all when offline. (Hitting the network
+  // first here is what made iOS show the "Use Wi-Fi" popup in airplane mode.)
+  // The network is only used as a last resort if the page somehow isn't cached.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('./index.html'))
+      caches.match(request)
+        .then((cached) => cached || caches.match('./index.html'))
+        .then((cached) => cached || fetch(request))
     );
     return;
   }
