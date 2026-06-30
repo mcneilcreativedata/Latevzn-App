@@ -12,7 +12,7 @@
 
 import { SECTIONS, getSection } from './data.js';
 import { startRouter } from './router.js';
-import { addResponse, listResponses } from './db.js';
+import { addResponse, listResponses, setState, getState } from './db.js';
 
 // The element on the page where every screen is drawn.
 const appEl = document.getElementById('app');
@@ -27,6 +27,46 @@ const WORKING_METHOD = {
   sectionId: 'working-method',  // how entries are labelled in the database
   blockId: 'this-week-noticed', // which prompt within the section
   prompt: 'This week I noticed:',
+};
+
+// ---- The "Why I Photograph" section --------------------------------------
+// Unlike Working Method, this section is "save-in-place": it holds the person's
+// current answers and overwrites each one when it changes. Each input has its
+// own key in the "states" table. To change the intro passage, the prompt, or a
+// check-in label later, edit them here.
+const WHY_I_PHOTOGRAPH = {
+  route: 'why-i-photograph', // matches the id in data.js (the web address)
+
+  // The static passage shown at the top, as separate paragraphs.
+  passage: [
+    'I do not believe my voice is something I invent all at once. I believe it is something I uncover through repetition, attention, curiosity, and the photographs I keep returning to.',
+    'Right now, my strongest pull seems to be toward images that preserve what it felt like to exist somewhere: a room, a doorway, a window, a quiet interaction, a body inside a space, a patch of light across a wall.',
+    'I am drawn to film because it asks me to slow down. But film is not the entire identity. It is one way of practicing attention.',
+    'I want to make work that feels personal without becoming closed off. I want to attract clients who are not just asking for photographs, but responding to a way of seeing.',
+  ],
+
+  rewritePrompt: 'Rewrite this in my own words:',
+  rewriteKey: 'why-i-photograph:rewrite',
+
+  checkinHeading: 'Quick check-in',
+  // Each item stores two values: whether its box is ticked, and its answer.
+  checkins: [
+    {
+      label: 'What would I photograph even if nobody saw it?',
+      checkedKey: 'why-i-photograph:checkin-1:checked',
+      answerKey: 'why-i-photograph:checkin-1:answer',
+    },
+    {
+      label: 'What kinds of scenes make me instinctively reach for the camera?',
+      checkedKey: 'why-i-photograph:checkin-2:checked',
+      answerKey: 'why-i-photograph:checkin-2:answer',
+    },
+    {
+      label: 'What kind of client would understand this work without needing me to over-explain it?',
+      checkedKey: 'why-i-photograph:checkin-3:checked',
+      answerKey: 'why-i-photograph:checkin-3:answer',
+    },
+  ],
 };
 
 // A tiny helper to safely show text without it being treated as HTML.
@@ -69,10 +109,14 @@ function renderSection(id) {
     return;
   }
 
-  // The one section that is actually built gets its real screen; the rest
+  // The sections that are actually built get their real screens; the rest
   // still show the placeholder.
   if (id === WORKING_METHOD.route) {
     renderWorkingMethod(section);
+    return;
+  }
+  if (id === WHY_I_PHOTOGRAPH.route) {
+    renderWhyIPhotograph(section);
     return;
   }
 
@@ -170,6 +214,111 @@ async function refreshEntries() {
 // Turn a stored timestamp into a friendly date and time.
 function formatDate(timestamp) {
   return new Date(timestamp).toLocaleString();
+}
+
+// ---- Screen: Why I Photograph --------------------------------------------
+// Shows the intro passage, a "rewrite" box, and three check-in items. Each
+// input saves itself in place: text boxes save when they lose focus, the
+// checkboxes save the moment they are toggled. On open, every input is filled
+// in from whatever was saved before.
+async function renderWhyIPhotograph(section) {
+  const data = WHY_I_PHOTOGRAPH;
+
+  const passageHtml = data.passage
+    .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+    .join('');
+
+  const checkinsHtml = data.checkins.map((item, index) => {
+    const answerId = `checkin-answer-${index}`;
+    return `
+      <li class="checkin-item">
+        <label class="checkin-head">
+          <input type="checkbox" class="checkin-checkbox"
+            data-key="${item.checkedKey}" />
+          <span class="checkin-label">${escapeHtml(item.label)}</span>
+        </label>
+        <textarea id="${answerId}" class="entry-input checkin-answer" rows="3"
+          data-key="${item.answerKey}"
+          placeholder="Write your answer…"></textarea>
+      </li>
+    `;
+  }).join('');
+
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      <div class="passage">${passageHtml}</div>
+
+      <div class="entry-form">
+        <label class="prompt-label" for="rewrite-text">${escapeHtml(data.rewritePrompt)}</label>
+        <textarea id="rewrite-text" class="entry-input" rows="5"
+          data-key="${data.rewriteKey}"
+          placeholder="Write your rewrite…"></textarea>
+      </div>
+
+      <h3 class="prompt-label">${escapeHtml(data.checkinHeading)}</h3>
+      <ul class="checkin-list">${checkinsHtml}</ul>
+
+      <p class="save-hint">Your changes save automatically. <span class="save-status" id="save-status" aria-live="polite"></span></p>
+    </section>
+  `;
+
+  // Load the saved values into every input, then turn on auto-saving.
+  await loadWhyState();
+  wireWhyAutoSave();
+}
+
+// Fill every input on the Why I Photograph screen from the database.
+async function loadWhyState() {
+  // Text areas (the rewrite box and each check-in answer) all carry a data-key.
+  const textareas = appEl.querySelectorAll('textarea[data-key]');
+  for (const textarea of textareas) {
+    const value = await getState(textarea.dataset.key);
+    textarea.value = value ?? '';
+  }
+
+  // Checkboxes.
+  const checkboxes = appEl.querySelectorAll('input[type="checkbox"][data-key]');
+  for (const checkbox of checkboxes) {
+    const value = await getState(checkbox.dataset.key);
+    checkbox.checked = value === true;
+  }
+}
+
+// Make each input save itself when it changes.
+function wireWhyAutoSave() {
+  const textareas = appEl.querySelectorAll('textarea[data-key]');
+  textareas.forEach((textarea) => {
+    // "change" fires when the box loses focus after an edit.
+    textarea.addEventListener('change', async () => {
+      await setState(textarea.dataset.key, textarea.value);
+      flashSaved();
+    });
+  });
+
+  const checkboxes = appEl.querySelectorAll('input[type="checkbox"][data-key]');
+  checkboxes.forEach((checkbox) => {
+    checkbox.addEventListener('change', async () => {
+      await setState(checkbox.dataset.key, checkbox.checked);
+      flashSaved();
+    });
+  });
+}
+
+// Briefly show "Saved" after a value is written.
+let savedTimer;
+function flashSaved() {
+  const statusEl = document.getElementById('save-status');
+  if (!statusEl) {
+    return;
+  }
+  statusEl.textContent = 'Saved';
+  clearTimeout(savedTimer);
+  savedTimer = setTimeout(() => {
+    statusEl.textContent = '';
+  }, 1500);
 }
 
 // ---- Decide which screen to draw -----------------------------------------

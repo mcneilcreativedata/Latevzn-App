@@ -262,3 +262,70 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ---- Why I Photograph: intro passage ------------------------------------ */
+.passage {
+  margin: 0 0 24px;
+}
+
+.passage p {
+  margin: 0 0 12px;
+}
+
+.passage p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Why I Photograph: quick check-in ----------------------------------- */
+.checkin-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.checkin-item {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.checkin-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.checkin-checkbox {
+  /* A comfortable tap target, vertically aligned with the first line. */
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  flex: none;
+  accent-color: var(--accent);
+}
+
+.checkin-label {
+  font-weight: 500;
+}
+
+.checkin-answer {
+  margin-top: 0;
+}
+
+/* ---- Why I Photograph: auto-save hint ----------------------------------- */
+.save-hint {
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.save-status {
+  color: var(--accent);
+  font-weight: 600;
+}

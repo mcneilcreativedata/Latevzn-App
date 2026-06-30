@@ -6,8 +6,9 @@
 // library called Dexie. Dexie is loaded from a local file in index.html
 // (vendor/dexie.min.js), so it keeps working with no internet connection.
 //
-// This file sets up one table, "responses", and gives the rest of the app two
-// simple jobs: save a new entry, and list past entries.
+// This file sets up the tables and gives the rest of the app a few simple jobs:
+//   - "responses": append-only entries (save a new entry, list past entries).
+//   - "states": save-in-place values (write a value for a key, read it back).
 // ============================================================================
 
 // Dexie is loaded as a normal <script> before this module runs, so it is
@@ -26,6 +27,17 @@ const db = new Dexie('latevzn');
 // because we never need to search by it.
 db.version(1).stores({
   responses: '++id, sectionId, blockId, createdAt',
+});
+
+// Version 2 adds a second table, "states", for save-in-place values. Each row
+// is one input's current value, looked up by a text "key":
+//   key        the unique name of the input (the primary key)
+//   updatedAt  when it was last changed (a timestamp)
+// The "value" itself is stored on the row but isn't listed here because we never
+// search by it. Bumping to version 2 leaves the existing "responses" table (and
+// everything already saved in it) untouched.
+db.version(2).stores({
+  states: 'key, updatedAt',
 });
 
 // Save a brand-new entry. This is "append-only": every call adds a new row and
@@ -47,4 +59,23 @@ export async function listResponses(sectionId, blockId) {
     .and((row) => row.blockId === blockId)
     .sortBy('createdAt'); // oldest → newest
   return rows.reverse(); // flip to newest → oldest
+}
+
+// ---- Save-in-place values (the "states" table) ---------------------------
+
+// Save a value for a key. This is "update-in-place": Dexie's put() finds the
+// row with this key and replaces it, so writing the same key again overwrites
+// the previous value instead of adding a second row.
+export async function setState(key, value) {
+  return db.states.put({
+    key,
+    value,
+    updatedAt: Date.now(),
+  });
+}
+
+// Read back the value saved for a key. Returns undefined if nothing is saved.
+export async function getState(key) {
+  const row = await db.states.get(key);
+  return row ? row.value : undefined;
 }
