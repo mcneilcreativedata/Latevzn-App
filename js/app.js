@@ -69,6 +69,47 @@ const WHY_I_PHOTOGRAPH = {
   ],
 };
 
+// ---- The "What My Work Is Telling Me" section ----------------------------
+// Same save-in-place pattern as Why I Photograph. Each item shows a fixed
+// title + description (read-only), then two saved inputs: a single-choice
+// picker (Agree / Unsure / Disagree) and an evidence text box. The keys below
+// are how each input is stored in the "states" table. To change the wording
+// later, edit it here.
+const WHAT_MY_WORK = {
+  route: 'what-my-work-is-telling-me', // matches the id in data.js
+
+  // The single-choice options, shown left to right under each item.
+  choiceOptions: [
+    { value: 'agree', label: 'Agree' },
+    { value: 'unsure', label: 'Unsure' },
+    { value: 'disagree', label: 'Disagree' },
+  ],
+  evidenceLabel: 'Evidence from my own images:',
+
+  items: [
+    {
+      title: 'Atmosphere before subject',
+      description: 'Your strongest images often make the viewer notice the room, light, air, and silence before they fully settle on the subject. This is not a weakness; it may be part of your point of view.',
+    },
+    {
+      title: 'People in places',
+      description: 'The people in your images often feel connected to the architecture around them. The environment does not simply decorate the portrait; it becomes part of the portrait.',
+    },
+    {
+      title: 'Thresholds',
+      description: 'Doorways, windows, balconies, stairs, and interior/exterior transitions keep appearing. These spaces suggest movement, memory, waiting, privacy, and possibility.',
+    },
+    {
+      title: 'Quiet over spectacle',
+      description: 'Your work often becomes strongest when it does not try too hard to impress. Stillness may be one of your strongest tools.',
+    },
+    {
+      title: 'Light as character',
+      description: 'You often let light do emotional work. The question going forward is how to make sure light serves the idea rather than becoming the whole idea.',
+    },
+  ],
+};
+
 // A tiny helper to safely show text without it being treated as HTML.
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -117,6 +158,10 @@ function renderSection(id) {
   }
   if (id === WHY_I_PHOTOGRAPH.route) {
     renderWhyIPhotograph(section);
+    return;
+  }
+  if (id === WHAT_MY_WORK.route) {
+    renderWhatMyWork(section);
     return;
   }
 
@@ -266,30 +311,43 @@ async function renderWhyIPhotograph(section) {
   `;
 
   // Load the saved values into every input, then turn on auto-saving.
-  await loadWhyState();
-  wireWhyAutoSave();
+  await loadStateInputs();
+  wireStateAutoSave();
 }
 
-// Fill every input on the Why I Photograph screen from the database.
-async function loadWhyState() {
-  // Text areas (the rewrite box and each check-in answer) all carry a data-key.
-  const textareas = appEl.querySelectorAll('textarea[data-key]');
+// Fill every save-in-place input from the database. Shared by all
+// "save-in-place" screens (Why I Photograph, What My Work Is Telling Me).
+// Handles three kinds of input:
+//   - text areas / text inputs marked with data-key  → value
+//   - checkboxes marked with data-key                → checked (true/false)
+//   - radio buttons marked with data-choice-key      → the chosen option
+async function loadStateInputs(root = appEl) {
+  // Text areas (writing boxes, evidence boxes) all carry a data-key.
+  const textareas = root.querySelectorAll('textarea[data-key]');
   for (const textarea of textareas) {
     const value = await getState(textarea.dataset.key);
     textarea.value = value ?? '';
   }
 
   // Checkboxes.
-  const checkboxes = appEl.querySelectorAll('input[type="checkbox"][data-key]');
+  const checkboxes = root.querySelectorAll('input[type="checkbox"][data-key]');
   for (const checkbox of checkboxes) {
     const value = await getState(checkbox.dataset.key);
     checkbox.checked = value === true;
   }
+
+  // Single-choice radio groups. The three radios in a group share one
+  // data-choice-key; the saved value is the chosen option's value.
+  const radios = root.querySelectorAll('input[type="radio"][data-choice-key]');
+  for (const radio of radios) {
+    const value = await getState(radio.dataset.choiceKey);
+    radio.checked = value === radio.value;
+  }
 }
 
-// Make each input save itself when it changes.
-function wireWhyAutoSave() {
-  const textareas = appEl.querySelectorAll('textarea[data-key]');
+// Make each save-in-place input save itself when it changes. Shared helper.
+function wireStateAutoSave(root = appEl) {
+  const textareas = root.querySelectorAll('textarea[data-key]');
   textareas.forEach((textarea) => {
     // "change" fires when the box loses focus after an edit.
     textarea.addEventListener('change', async () => {
@@ -298,10 +356,19 @@ function wireWhyAutoSave() {
     });
   });
 
-  const checkboxes = appEl.querySelectorAll('input[type="checkbox"][data-key]');
+  const checkboxes = root.querySelectorAll('input[type="checkbox"][data-key]');
   checkboxes.forEach((checkbox) => {
     checkbox.addEventListener('change', async () => {
       await setState(checkbox.dataset.key, checkbox.checked);
+      flashSaved();
+    });
+  });
+
+  const radios = root.querySelectorAll('input[type="radio"][data-choice-key]');
+  radios.forEach((radio) => {
+    // Only the newly-selected radio fires "change"; save its value.
+    radio.addEventListener('change', async () => {
+      await setState(radio.dataset.choiceKey, radio.value);
       flashSaved();
     });
   });
@@ -319,6 +386,61 @@ function flashSaved() {
   savedTimer = setTimeout(() => {
     statusEl.textContent = '';
   }, 1500);
+}
+
+// ---- Screen: What My Work Is Telling Me ----------------------------------
+// Five fixed items, each with a read-only title + description, then two saved
+// inputs: a single-choice picker (Agree / Unsure / Disagree) and an evidence
+// box. Saves in place, exactly like Why I Photograph.
+async function renderWhatMyWork(section) {
+  const data = WHAT_MY_WORK;
+
+  const itemsHtml = data.items.map((item, index) => {
+    const number = index + 1;
+    const choiceKey = `${data.route}:item-${number}:choice`;
+    const evidenceKey = `${data.route}:item-${number}:evidence`;
+    const groupName = `choice-item-${number}`;
+    const evidenceId = `evidence-${number}`;
+
+    const optionsHtml = data.choiceOptions.map((option) => `
+      <label class="choice-option">
+        <input type="radio" name="${groupName}" value="${option.value}"
+          data-choice-key="${choiceKey}" />
+        <span>${escapeHtml(option.label)}</span>
+      </label>
+    `).join('');
+
+    return `
+      <li class="checkin-item">
+        <h3 class="checkin-label">${escapeHtml(item.title)}</h3>
+        <p class="item-desc">${escapeHtml(item.description)}</p>
+
+        <div class="choice" role="radiogroup" aria-label="${escapeHtml(item.title)}">
+          ${optionsHtml}
+        </div>
+
+        <label class="prompt-label" for="${evidenceId}">${escapeHtml(data.evidenceLabel)}</label>
+        <textarea id="${evidenceId}" class="entry-input" rows="3"
+          data-key="${evidenceKey}"
+          placeholder="Write your evidence…"></textarea>
+      </li>
+    `;
+  }).join('');
+
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      <ul class="checkin-list">${itemsHtml}</ul>
+
+      <p class="save-hint">Your changes save automatically. <span class="save-status" id="save-status" aria-live="polite"></span></p>
+    </section>
+  `;
+
+  // Load saved values into every input, then turn on auto-saving.
+  await loadStateInputs();
+  wireStateAutoSave();
 }
 
 // ---- Decide which screen to draw -----------------------------------------

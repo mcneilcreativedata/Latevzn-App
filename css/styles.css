@@ -318,6 +318,31 @@ body {
   margin-top: 0;
 }
 
+/* ---- What My Work Is Telling Me: item description + choice picker -------- */
+.item-desc {
+  margin: 0 0 14px;
+}
+
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-bottom: 14px;
+}
+
+.choice-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.choice-option input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+
 /* ---- Why I Photograph: auto-save hint ----------------------------------- */
 .save-hint {
   margin-top: 20px;
