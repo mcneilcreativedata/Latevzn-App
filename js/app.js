@@ -110,6 +110,59 @@ const WHAT_MY_WORK = {
   ],
 };
 
+// ---- The "Attracting the Right Clients" section --------------------------
+// Save-in-place, like the sections above. Two checkbox lists plus two free-text
+// boxes. Each checkbox and box is stored under its own key in the "states"
+// table. To change the wording later, edit it here.
+const ATTRACTING_CLIENTS = {
+  route: 'attracting-the-right-clients', // matches the id in data.js
+  intro: 'The goal is alignment, not volume.',
+
+  positioningHeading: 'Possible positioning language',
+  positioning: [
+    'Narrative portraits rooted in light, atmosphere, and place.',
+    'Cinematic portraits and quiet stories on film and digital.',
+    'People, places, and ordinary moments photographed with atmosphere.',
+    'Narrative portrait photographer based in NYC.',
+    'Light. Place. People. Quiet stories.',
+  ],
+
+  favoriteLabel: 'My favorite version / edits',
+  favoriteKey: 'attracting-the-right-clients:favorite-version',
+
+  clientTypesHeading: 'Aligned client types to test',
+  clientTypes: [
+    'Couples who want documentary feeling over posed perfection',
+    'Artists and musicians',
+    'Independent restaurants or cafes with atmosphere',
+    'Boutique hotels and interior spaces',
+    'Small fashion or lifestyle brands',
+    'Writers, designers, makers, and creative professionals',
+    'Editorial stories about people and place',
+  ],
+
+  respondedLabel: 'Who has responded well to my work so far?',
+  respondedKey: 'attracting-the-right-clients:responded-well',
+};
+
+// ---- The "Bio Experiments" section ---------------------------------------
+// Save-in-place: one checkbox list plus one free-text box.
+const BIO_EXPERIMENTS = {
+  route: 'bio-experiments', // matches the id in data.js
+  intro: 'Try language. Do not marry it too soon.',
+
+  bios: [
+    'Narrative Portrait Photographer | NYC | Book below',
+    'Quiet stories on film + digital | NYC',
+    'Narrative portraits rooted in light, place, and atmosphere | NYC',
+    'Light. Place. People. | NYC',
+    'Cinematic portraits + quiet documentary work | NYC',
+  ],
+
+  mostTrueLabel: 'What feels most true right now?',
+  mostTrueKey: 'bio-experiments:most-true',
+};
+
 // A tiny helper to safely show text without it being treated as HTML.
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -162,6 +215,14 @@ function renderSection(id) {
   }
   if (id === WHAT_MY_WORK.route) {
     renderWhatMyWork(section);
+    return;
+  }
+  if (id === ATTRACTING_CLIENTS.route) {
+    renderAttractingClients(section);
+    return;
+  }
+  if (id === BIO_EXPERIMENTS.route) {
+    renderBioExperiments(section);
     return;
   }
 
@@ -386,6 +447,105 @@ function flashSaved() {
   savedTimer = setTimeout(() => {
     statusEl.textContent = '';
   }, 1500);
+}
+
+// Build a list of saved checkboxes. Each item is { key, label }; the key is the
+// data-key used to save/restore that checkbox's ticked state. Reuses the
+// existing check-in row styles, so no new CSS is needed.
+function checkboxListHtml(items) {
+  const rows = items.map((item) => `
+    <li>
+      <label class="checkin-head">
+        <input type="checkbox" class="checkin-checkbox" data-key="${item.key}" />
+        <span class="checkin-label">${escapeHtml(item.label)}</span>
+      </label>
+    </li>
+  `).join('');
+  return `<ul class="checkin-list">${rows}</ul>`;
+}
+
+// ---- Screen: Attracting the Right Clients --------------------------------
+// Save-in-place: two checkbox lists and two free-text boxes. Reuses the shared
+// load/auto-save helpers.
+async function renderAttractingClients(section) {
+  const data = ATTRACTING_CLIENTS;
+
+  const positioningItems = data.positioning.map((label, index) => ({
+    label,
+    key: `${data.route}:positioning-${index + 1}:checked`,
+  }));
+  const clientTypeItems = data.clientTypes.map((label, index) => ({
+    label,
+    key: `${data.route}:client-type-${index + 1}:checked`,
+  }));
+
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      <p class="intro">${escapeHtml(data.intro)}</p>
+
+      <h3 class="prompt-label">${escapeHtml(data.positioningHeading)}</h3>
+      ${checkboxListHtml(positioningItems)}
+
+      <div class="entry-form">
+        <label class="prompt-label" for="favorite-version">${escapeHtml(data.favoriteLabel)}</label>
+        <textarea id="favorite-version" class="entry-input" rows="3"
+          data-key="${data.favoriteKey}"
+          placeholder="Write here…"></textarea>
+      </div>
+
+      <h3 class="prompt-label">${escapeHtml(data.clientTypesHeading)}</h3>
+      ${checkboxListHtml(clientTypeItems)}
+
+      <div class="entry-form">
+        <label class="prompt-label" for="responded-well">${escapeHtml(data.respondedLabel)}</label>
+        <textarea id="responded-well" class="entry-input" rows="3"
+          data-key="${data.respondedKey}"
+          placeholder="Write here…"></textarea>
+      </div>
+
+      <p class="save-hint">Your changes save automatically. <span class="save-status" id="save-status" aria-live="polite"></span></p>
+    </section>
+  `;
+
+  await loadStateInputs();
+  wireStateAutoSave();
+}
+
+// ---- Screen: Bio Experiments ---------------------------------------------
+// Save-in-place: one checkbox list and one free-text box.
+async function renderBioExperiments(section) {
+  const data = BIO_EXPERIMENTS;
+
+  const bioItems = data.bios.map((label, index) => ({
+    label,
+    key: `${data.route}:bio-${index + 1}:checked`,
+  }));
+
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      <p class="intro">${escapeHtml(data.intro)}</p>
+
+      ${checkboxListHtml(bioItems)}
+
+      <div class="entry-form">
+        <label class="prompt-label" for="most-true">${escapeHtml(data.mostTrueLabel)}</label>
+        <textarea id="most-true" class="entry-input" rows="3"
+          data-key="${data.mostTrueKey}"
+          placeholder="Write here…"></textarea>
+      </div>
+
+      <p class="save-hint">Your changes save automatically. <span class="save-status" id="save-status" aria-live="polite"></span></p>
+    </section>
+  `;
+
+  await loadStateInputs();
+  wireStateAutoSave();
 }
 
 // ---- Screen: What My Work Is Telling Me ----------------------------------
