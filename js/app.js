@@ -12,7 +12,7 @@
 
 import { SECTIONS, getSection } from './data.js';
 import { startRouter } from './router.js';
-import { addResponse, listResponses, setState, getState } from './db.js';
+import { addResponse, listResponses, setState, getState, readAllData } from './db.js';
 
 // The element on the page where every screen is drawn.
 const appEl = document.getElementById('app');
@@ -182,11 +182,23 @@ function renderHome() {
     </li>
   `).join('');
 
+  // A separate "Backup" card, shown last. It isn't a guide chapter, so it is
+  // not part of the SECTIONS list above — we add it here on its own.
+  const backupCard = `
+    <li class="card">
+      <a class="card-link" href="#/section/backup">
+        <span class="card-title">Backup</span>
+        <span class="card-arrow" aria-hidden="true">›</span>
+      </a>
+    </li>
+  `;
+
   appEl.innerHTML = `
     <section class="screen">
       <p class="intro">Your photography reflection journal. Choose a section to begin.</p>
       <ul class="card-list">
         ${items}
+        ${backupCard}
       </ul>
     </section>
   `;
@@ -195,6 +207,13 @@ function renderHome() {
 // ---- Screen: Section placeholder -----------------------------------------
 // Shows the section title, its short blurb, and a clear "coming soon" note.
 function renderSection(id) {
+  // Backup is its own small screen, not one of the guide chapters, so handle it
+  // before looking the id up in the sections list.
+  if (id === 'backup') {
+    renderBackup();
+    return;
+  }
+
   const section = getSection(id);
 
   // If the address points to a section we do not know, go back home.
@@ -447,6 +466,108 @@ function flashSaved() {
   savedTimer = setTimeout(() => {
     statusEl.textContent = '';
   }, 1500);
+}
+
+// ---- Screen: Backup ------------------------------------------------------
+// Reads everything from both tables and lets you save it as one JSON file.
+// This screen only READS your data — it never changes or deletes anything.
+
+// Holds the data read when the screen opens, so the button can build the file
+// immediately on tap. On iOS the share sheet must be opened during the tap,
+// with no waiting first, so we read ahead of time here.
+let backupData = null;
+
+async function renderBackup() {
+  backupData = null;
+
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">Backup</h2>
+      <p class="intro">Save a copy of everything you've written to a file you can keep off your phone. This only reads your data — nothing is changed or deleted.</p>
+      <button id="backup-button" class="save-button" type="button" disabled>Back up my data</button>
+      <p class="save-hint"><span class="save-status" id="backup-status"></span></p>
+    </section>
+  `;
+
+  const button = document.getElementById('backup-button');
+
+  // Read the data now, while the screen opens, so the tap handler below can
+  // build and share the file with nothing to wait for.
+  backupData = await readAllData();
+  button.disabled = false;
+
+  button.addEventListener('click', () => {
+    exportBackup(backupData);
+  });
+}
+
+// Build the backup file and hand it to the phone's share sheet, or download it
+// if sharing files isn't supported. Runs straight through to the share call so
+// it stays inside the user's tap.
+function exportBackup(data) {
+  const now = new Date();
+  const backup = {
+    app: 'Latevzn',
+    schemaVersion: 1,
+    exportedAt: now.toISOString(),
+    responses: data.responses,
+    states: data.states,
+  };
+
+  const json = JSON.stringify(backup, null, 2);
+  const filename = `latevzn-backup-${localDateStamp(now)}.json`;
+  const blob = new Blob([json], { type: 'application/json' });
+
+  // Try the phone's native share sheet first (so you can Save to Files, etc.).
+  const file = new File([blob], filename, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator
+      .share({ files: [file], title: 'Latevzn backup' })
+      .then(() => setBackupStatus('Backup shared.'))
+      .catch((error) => {
+        // Closing the share sheet is not an error — just note it and stop.
+        if (error && error.name === 'AbortError') {
+          setBackupStatus('Backup cancelled.');
+          return;
+        }
+        // Anything else: fall back to a normal download.
+        downloadBlob(blob, filename);
+      });
+    return;
+  }
+
+  // No file sharing (e.g. on a computer) — download the file instead.
+  downloadBlob(blob, filename);
+}
+
+// Trigger a normal browser download of the file.
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  setBackupStatus('Backup file downloaded.');
+}
+
+// Build a YYYY-MM-DD stamp from the phone's local date (so an evening backup
+// isn't labelled the next day), used in the filename.
+function localDateStamp(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function setBackupStatus(text) {
+  const statusEl = document.getElementById('backup-status');
+  if (statusEl) {
+    statusEl.textContent = text;
+  }
 }
 
 // Build a list of saved checkboxes. Each item is { key, label }; the key is the

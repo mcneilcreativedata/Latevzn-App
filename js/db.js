@@ -79,3 +79,13 @@ export async function getState(key) {
   const row = await db.states.get(key);
   return row ? row.value : undefined;
 }
+
+// ---- Backup (read-only) --------------------------------------------------
+
+// Read EVERY row from both tables, for the backup/export feature. This only
+// reads — toArray() never changes or deletes anything.
+export async function readAllData() {
+  const responses = await db.responses.toArray();
+  const states = await db.states.toArray();
+  return { responses, states };
+}
