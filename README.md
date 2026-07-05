@@ -65,3 +65,6 @@ the home screen updates automatically.
 Future versions will add the actual journaling features and save your entries
 on your device using IndexedDB (via the Dexie library). None of that is built
 yet — this is just the shell.
+
+<!-- Redeploy trigger: forces a fresh GitHub Pages build (no app changes). -->
+
