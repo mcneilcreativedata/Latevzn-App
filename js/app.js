@@ -163,6 +163,118 @@ const BIO_EXPERIMENTS = {
   mostTrueKey: 'bio-experiments:most-true',
 };
 
+// ---- The "How to Make Fewer Middle Photos" section -----------------------
+// Save-in-place: two text boxes and two checkbox groups.
+const HOW_TO_FEWER = {
+  route: 'how-to-make-fewer-middle-photos', // matches the id in data.js
+
+  aboutLabel: 'This photograph is about ___',
+  aboutKey: 'how-to-make-fewer-middle-photos:about',
+
+  dominanceChecks: [
+    { label: 'Environment dominates', key: 'how-to-make-fewer-middle-photos:environment-dominates:checked' },
+    { label: 'Person dominates', key: 'how-to-make-fewer-middle-photos:person-dominates:checked' },
+  ],
+
+  choseLabel: 'What I chose and why',
+  choseKey: 'how-to-make-fewer-middle-photos:what-i-chose:answer',
+
+  processChecks: [
+    { label: 'Wide version made', key: 'how-to-make-fewer-middle-photos:wide-made:checked' },
+    { label: 'Close version made', key: 'how-to-make-fewer-middle-photos:close-made:checked' },
+    { label: 'I chose the stronger frame', key: 'how-to-make-fewer-middle-photos:chose-stronger:checked' },
+    { label: "I can explain why it's stronger in one sentence", key: 'how-to-make-fewer-middle-photos:can-explain:checked' },
+  ],
+};
+
+// ---- The "Study Library" section -----------------------------------------
+// Save-in-place: three checkbox groups (each item shows a name/title with a
+// short read-only description) plus one notes box. Keys are stable per index;
+// the descriptions are display only and are not stored.
+const STUDY_LIBRARY = {
+  route: 'study-library', // matches the id in data.js
+
+  groups: [
+    {
+      heading: 'Cinematographers',
+      keyPrefix: 'study-library:cinematographer',
+      items: [
+        { label: 'Roger Deakins', description: 'Simplicity, negative space, precise framing, clean visual decisions. Watch: No Country for Old Men, Skyfall, 1917, Blade Runner 2049' },
+        { label: 'Greig Fraser', description: 'Darkness, atmosphere, selective light, mood without over-explaining. Watch: The Batman, Dune, Lion' },
+        { label: 'Hoyte van Hoytema', description: 'Scale, natural light, distance, human figures inside large worlds. Watch: Her, Interstellar, Oppenheimer' },
+        { label: 'Christopher Doyle', description: 'Color, repetition, hallways, mood, imperfect emotional energy. Watch: In the Mood for Love, Chungking Express' },
+        { label: 'Bradford Young', description: 'Soft naturalism, intimacy, skin, shadow, emotional restraint. Watch: Arrival, Selma' },
+      ],
+    },
+    {
+      heading: 'Photographers',
+      keyPrefix: 'study-library:photographer',
+      items: [
+        { label: 'Todd Hido', description: 'Homes, windows, loneliness, weather, emotional atmosphere.' },
+        { label: 'Saul Leiter', description: 'Layering, reflections, color, obstruction, everyday poetry.' },
+        { label: 'Alec Soth', description: 'Quiet narrative documentary, people and place, emotional distance.' },
+        { label: 'Rinko Kawauchi', description: 'Ordinary beauty, light, small details, delicacy.' },
+        { label: 'Gregory Crewdson', description: 'Constructed scenes where every object contributes to story.' },
+        { label: 'Harry Gruyaert', description: 'Color relationships, light, place, strong graphic compositions.' },
+        { label: 'Cig Harvey', description: 'Domestic poetry, color, mood, intimate visual language.' },
+      ],
+    },
+    {
+      heading: 'Film Study List',
+      keyPrefix: 'study-library:film',
+      items: [
+        { label: 'Perfect Days', description: 'Routine, quiet, windows, small gestures.' },
+        { label: 'Past Lives', description: 'Distance between people, restrained emotion, framing.' },
+        { label: 'Aftersun', description: 'Memory, imperfection, nostalgia, fragments.' },
+        { label: 'Moonlight', description: 'Color, intimacy, skin, silence.' },
+        { label: 'Her', description: 'Warmth, solitude, negative space, city interiors.' },
+        { label: 'Columbus', description: 'Architecture, emotional distance, people inside spaces.' },
+        { label: 'In the Mood for Love', description: 'Hallways, repetition, color, restraint.' },
+        { label: 'Paris, Texas', description: 'Landscape, loneliness, scale.' },
+        { label: 'The Holdovers', description: 'Warm interiors, period feeling, character and place.' },
+        { label: 'A Ghost Story', description: 'Stillness, time, waiting, empty rooms.' },
+      ],
+    },
+  ],
+
+  notesLabel: 'Notes',
+  notesKey: 'study-library:notes',
+};
+
+// ---- The "Watch One Scene" section ---------------------------------------
+// Append-only: each Save adds a new dated entry made of several fields. The
+// fields are packed into one JSON string and stored via addResponse(), so the
+// database helpers do not change.
+const WATCH_ONE_SCENE = {
+  route: 'watch-one-scene', // matches the id in data.js
+  sectionId: 'watch-one-scene',
+  blockId: 'entry',
+  fields: [
+    { key: 'filmTitle', label: 'Film title', rows: 1 },
+    { key: 'sceneTimestamp', label: 'Scene or timestamp', rows: 1 },
+    { key: 'oneFrame', label: 'One frame that made me stop', rows: 2 },
+    { key: 'whyCamera', label: 'Why is the camera here?', rows: 2 },
+    { key: 'environmentRole', label: 'What role does the environment play?', rows: 2 },
+    { key: 'feelingRemains', label: 'What feeling remains after the scene?', rows: 2 },
+    { key: 'tryThisWeek', label: 'What I could try in my own work this week', rows: 2 },
+  ],
+};
+
+// ---- The "Monthly Review" section ----------------------------------------
+// Append-only: each Save adds a new dated entry with five short answers.
+const MONTHLY_REVIEW = {
+  route: 'monthly-review', // matches the id in data.js
+  sectionId: 'monthly-review',
+  blockId: 'entry',
+  fields: [
+    { key: 'imageStayed', label: 'Which image stayed with me?', rows: 2 },
+    { key: 'driftedToward', label: 'What I drifted toward?', rows: 2 },
+    { key: 'feltForced', label: 'What felt forced?', rows: 2 },
+    { key: 'tryNextMonth', label: "What I'd like to try once next month?", rows: 2 },
+    { key: 'keptFun', label: 'Did I keep this fun?', rows: 1 },
+  ],
+};
+
 // A tiny helper to safely show text without it being treated as HTML.
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -242,6 +354,22 @@ function renderSection(id) {
   }
   if (id === BIO_EXPERIMENTS.route) {
     renderBioExperiments(section);
+    return;
+  }
+  if (id === HOW_TO_FEWER.route) {
+    renderHowToFewer(section);
+    return;
+  }
+  if (id === STUDY_LIBRARY.route) {
+    renderStudyLibrary(section);
+    return;
+  }
+  if (id === WATCH_ONE_SCENE.route) {
+    renderEntryChapter(section, WATCH_ONE_SCENE);
+    return;
+  }
+  if (id === MONTHLY_REVIEW.route) {
+    renderEntryChapter(section, MONTHLY_REVIEW);
     return;
   }
 
@@ -583,6 +711,211 @@ function checkboxListHtml(items) {
     </li>
   `).join('');
   return `<ul class="checkin-list">${rows}</ul>`;
+}
+
+// Like checkboxListHtml, but each item also shows a short read-only description
+// under its name. Items are { key, label, description }. Used by Study Library.
+function describedCheckboxListHtml(items) {
+  const rows = items.map((item) => `
+    <li>
+      <label class="checkin-head">
+        <input type="checkbox" class="checkin-checkbox" data-key="${item.key}" />
+        <span class="checkin-text">
+          <span class="checkin-label">${escapeHtml(item.label)}</span>
+          <span class="checkin-sub">${escapeHtml(item.description)}</span>
+        </span>
+      </label>
+    </li>
+  `).join('');
+  return `<ul class="checkin-list">${rows}</ul>`;
+}
+
+// ---- Screen: How to Make Fewer Middle Photos -----------------------------
+// Save-in-place: two text boxes and two checkbox groups.
+async function renderHowToFewer(section) {
+  const data = HOW_TO_FEWER;
+
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      <div class="entry-form">
+        <label class="prompt-label" for="about-text">${escapeHtml(data.aboutLabel)}</label>
+        <textarea id="about-text" class="entry-input" rows="2"
+          data-key="${data.aboutKey}"
+          placeholder="Write here…"></textarea>
+      </div>
+
+      ${checkboxListHtml(data.dominanceChecks)}
+
+      <div class="entry-form">
+        <label class="prompt-label" for="chose-text">${escapeHtml(data.choseLabel)}</label>
+        <textarea id="chose-text" class="entry-input" rows="4"
+          data-key="${data.choseKey}"
+          placeholder="Write here…"></textarea>
+      </div>
+
+      ${checkboxListHtml(data.processChecks)}
+
+      <p class="save-hint">Your changes save automatically. <span class="save-status" id="save-status" aria-live="polite"></span></p>
+    </section>
+  `;
+
+  await loadStateInputs();
+  wireStateAutoSave();
+}
+
+// ---- Screen: Study Library -----------------------------------------------
+// Save-in-place: three groups of described checkboxes plus a notes box.
+async function renderStudyLibrary(section) {
+  const data = STUDY_LIBRARY;
+
+  const groupsHtml = data.groups.map((group) => {
+    const items = group.items.map((item, index) => ({
+      label: item.label,
+      description: item.description,
+      key: `${group.keyPrefix}-${index + 1}:checked`,
+    }));
+    return `
+      <h3 class="prompt-label">${escapeHtml(group.heading)}</h3>
+      ${describedCheckboxListHtml(items)}
+    `;
+  }).join('');
+
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      ${groupsHtml}
+
+      <div class="entry-form">
+        <label class="prompt-label" for="library-notes">${escapeHtml(data.notesLabel)}</label>
+        <textarea id="library-notes" class="entry-input" rows="5"
+          data-key="${data.notesKey}"
+          placeholder="Write here…"></textarea>
+      </div>
+
+      <p class="save-hint">Your changes save automatically. <span class="save-status" id="save-status" aria-live="polite"></span></p>
+    </section>
+  `;
+
+  await loadStateInputs();
+  wireStateAutoSave();
+}
+
+// ---- Screen: append-only entry chapters (Watch One Scene, Monthly Review) -
+// A form with several fields and a Save button. Each Save packs the fields into
+// one JSON string and stores it as a new dated row via addResponse(), so the
+// database helpers are unchanged. Past entries show newest first.
+async function renderEntryChapter(section, config) {
+  const fieldsHtml = config.fields.map((field, index) => {
+    const fieldId = `entry-field-${index}`;
+    return `
+      <div class="entry-form">
+        <label class="prompt-label" for="${fieldId}">${escapeHtml(field.label)}</label>
+        <textarea id="${fieldId}" class="entry-input" rows="${field.rows || 2}"
+          data-field="${field.key}"
+          placeholder="Write here…"></textarea>
+      </div>
+    `;
+  }).join('');
+
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      ${fieldsHtml}
+      <button id="save-entry" class="save-button" type="button">Save</button>
+
+      <ul id="entries" class="entries"></ul>
+    </section>
+  `;
+
+  const saveButton = document.getElementById('save-entry');
+  const textareas = Array.from(appEl.querySelectorAll('textarea[data-field]'));
+
+  saveButton.addEventListener('click', async () => {
+    // Collect the field values into one object.
+    const values = {};
+    let hasSomething = false;
+    textareas.forEach((textarea) => {
+      const value = textarea.value.trim();
+      values[textarea.dataset.field] = value;
+      if (value) {
+        hasSomething = true;
+      }
+    });
+
+    // If the whole form is empty, do nothing.
+    if (!hasSomething) {
+      textareas[0].focus();
+      return;
+    }
+
+    saveButton.disabled = true;
+    try {
+      await addResponse({
+        sectionId: config.sectionId,
+        blockId: config.blockId,
+        text: JSON.stringify(values),
+      });
+      // Clear the form for the next entry, then refresh the list.
+      textareas.forEach((textarea) => { textarea.value = ''; });
+      await refreshEntryList(config);
+      textareas[0].focus();
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+
+  await refreshEntryList(config);
+}
+
+// Re-draw the past entries for an append-only chapter (newest first).
+async function refreshEntryList(config) {
+  const listEl = document.getElementById('entries');
+  if (!listEl) {
+    return;
+  }
+
+  const entries = await listResponses(config.sectionId, config.blockId);
+
+  if (entries.length === 0) {
+    listEl.innerHTML = `
+      <li class="entries-empty">No entries yet. Your saved entries will appear here.</li>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = entries.map((entry) => {
+    // The stored text is a JSON object of the field values.
+    let values = {};
+    try {
+      values = JSON.parse(entry.text);
+    } catch (error) {
+      values = {};
+    }
+
+    // Show each field that has a value, in the chapter's field order.
+    const fieldsHtml = config.fields
+      .filter((field) => values[field.key])
+      .map((field) => `
+        <p class="entry-field">
+          <span class="entry-field-label">${escapeHtml(field.label)}</span>
+          ${escapeHtml(values[field.key])}
+        </p>
+      `).join('');
+
+    return `
+      <li class="entry">
+        <p class="entry-date">${escapeHtml(formatDate(entry.createdAt))}</p>
+        ${fieldsHtml}
+      </li>
+    `;
+  }).join('');
 }
 
 // ---- Screen: Attracting the Right Clients --------------------------------

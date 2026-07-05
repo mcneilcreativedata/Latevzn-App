@@ -318,6 +318,35 @@ body {
   margin-top: 0;
 }
 
+/* ---- Study Library: name with a short description underneath ------------- */
+.checkin-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkin-sub {
+  margin-top: 2px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ---- Append-only entries with several labelled fields ------------------- */
+.entry-field {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.entry-field:last-child {
+  margin-bottom: 0;
+}
+
+.entry-field-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 /* ---- What My Work Is Telling Me: item description + choice picker -------- */
 .item-desc {
   margin: 0 0 14px;
