@@ -40,6 +40,17 @@ db.version(2).stores({
   states: 'key, updatedAt',
 });
 
+// Version 3 adds a third table, "photos", for the Photo Plates section:
+//   ++id       an automatic, ever-increasing id
+//   createdAt  when the photo was saved (a timestamp), so we can sort by newest
+// The image itself is stored on the row as a "blob" but isn't listed here
+// because we never search by it. Adding a new version and listing only the new
+// table leaves the existing "responses" and "states" tables — and everything
+// already saved in them — completely untouched.
+db.version(3).stores({
+  photos: '++id, createdAt',
+});
+
 // Save a brand-new entry. This is "append-only": every call adds a new row and
 // nothing that was saved before is ever changed or removed.
 export async function addResponse({ sectionId, blockId, text }) {
@@ -78,6 +89,22 @@ export async function setState(key, value) {
 export async function getState(key) {
   const row = await db.states.get(key);
   return row ? row.value : undefined;
+}
+
+// ---- Photos (the "photos" table) -----------------------------------------
+
+// Save a new photo (a shrunk image blob). Append-only, like responses: every
+// call adds a new row and never changes an earlier one.
+export async function addPhoto(blob) {
+  return db.photos.add({
+    blob,
+    createdAt: Date.now(),
+  });
+}
+
+// Get all saved photos, newest first.
+export async function listPhotos() {
+  return db.photos.orderBy('createdAt').reverse().toArray();
 }
 
 // ---- Backup (read-only) --------------------------------------------------

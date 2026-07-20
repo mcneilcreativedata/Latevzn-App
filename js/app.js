@@ -12,7 +12,7 @@
 
 import { SECTIONS, getSection } from './data.js';
 import { startRouter } from './router.js';
-import { addResponse, listResponses, setState, getState, readAllData } from './db.js';
+import { addResponse, listResponses, setState, getState, readAllData, addPhoto, listPhotos } from './db.js';
 
 // The element on the page where every screen is drawn.
 const appEl = document.getElementById('app');
@@ -161,6 +161,15 @@ const BIO_EXPERIMENTS = {
 
   mostTrueLabel: 'What feels most true right now?',
   mostTrueKey: 'bio-experiments:most-true',
+};
+
+// ---- The "Photo Plates" section ------------------------------------------
+// A simple photo journal: add a photo, it is shrunk and saved on the device,
+// and saved photos show newest first.
+const PHOTO_PLATES = {
+  route: 'photo-plates', // matches the id in data.js
+  maxSide: 1600,         // longest side (in pixels) to shrink photos down to
+  jpegQuality: 0.8,      // JPEG quality when re-saving the shrunk photo
 };
 
 // ---- The "How to Make Fewer Middle Photos" section -----------------------
@@ -370,6 +379,10 @@ function renderSection(id) {
   }
   if (id === MONTHLY_REVIEW.route) {
     renderEntryChapter(section, MONTHLY_REVIEW);
+    return;
+  }
+  if (id === PHOTO_PLATES.route) {
+    renderPhotoPlates(section);
     return;
   }
 
@@ -916,6 +929,128 @@ async function refreshEntryList(config) {
       </li>
     `;
   }).join('');
+}
+
+// ---- Screen: Photo Plates ------------------------------------------------
+// Add a photo from the phone, shrink it, save it on the device, and show the
+// saved photos newest first.
+async function renderPhotoPlates(section) {
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      <button id="add-plate" class="save-button" type="button">Add a plate</button>
+      <!-- Hidden file picker. accept="image/*" (with no "capture") lets the
+           phone offer both the camera and the photo library. -->
+      <input id="plate-input" type="file" accept="image/*" hidden />
+
+      <ul id="plates" class="plate-list"></ul>
+    </section>
+  `;
+
+  const addButton = document.getElementById('add-plate');
+  const fileInput = document.getElementById('plate-input');
+
+  // The button just opens the hidden file picker.
+  addButton.addEventListener('click', () => fileInput.click());
+
+  // When a photo is chosen, shrink it, save it, then refresh the list.
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) {
+      return;
+    }
+
+    addButton.disabled = true;
+    try {
+      const blob = await shrinkImage(file);
+      await addPhoto(blob);
+      // Clear the input so picking the same file again still fires "change".
+      fileInput.value = '';
+      await refreshPhotos();
+    } catch (error) {
+      console.warn('Could not save photo:', error);
+    } finally {
+      addButton.disabled = false;
+    }
+  });
+
+  await refreshPhotos();
+}
+
+// Shrink an image file: draw it to a canvas at roughly maxSide on its longest
+// edge (never enlarging a smaller image) and export a JPEG. Returns a Blob.
+function shrinkImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      const { maxSide, jpegQuality } = PHOTO_PLATES;
+      const longest = Math.max(img.naturalWidth, img.naturalHeight);
+      const scale = Math.min(1, maxSide / longest); // never scale up
+      const width = Math.round(img.naturalWidth * scale);
+      const height = Math.round(img.naturalHeight * scale);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Could not create image blob.'));
+          }
+        },
+        'image/jpeg',
+        jpegQuality
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not read that image.'));
+    };
+
+    img.src = url;
+  });
+}
+
+// Re-draw the saved photos (newest first).
+async function refreshPhotos() {
+  const listEl = document.getElementById('plates');
+  if (!listEl) {
+    return;
+  }
+
+  const photos = await listPhotos();
+
+  if (photos.length === 0) {
+    listEl.innerHTML = `
+      <li class="entries-empty">No plates yet. Add a photo and it will appear here.</li>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = photos.map(() => `
+    <li class="plate"><img class="plate-img" alt="Saved plate" /></li>
+  `).join('');
+
+  // Point each image at its blob via an object URL, and free that URL as soon
+  // as the browser has painted the image, so no URLs are leaked.
+  const images = listEl.querySelectorAll('.plate-img');
+  photos.forEach((photo, index) => {
+    const image = images[index];
+    const objectUrl = URL.createObjectURL(photo.blob);
+    image.onload = () => URL.revokeObjectURL(objectUrl);
+    image.src = objectUrl;
+  });
 }
 
 // ---- Screen: Attracting the Right Clients --------------------------------
