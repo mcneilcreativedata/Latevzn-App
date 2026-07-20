@@ -356,6 +356,11 @@ body {
   gap: 16px;
 }
 
+.plate {
+  /* Positioning context for the little remove button in the corner. */
+  position: relative;
+}
+
 .plate-img {
   display: block;
   width: 100%;
@@ -363,6 +368,27 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
+}
+
+/* Subtle "×" remove control in the top-right corner of each photo. */
+.plate-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.plate-remove:active {
+  background: rgba(0, 0, 0, 0.65);
 }
 
 /* ---- What My Work Is Telling Me: item description + choice picker -------- */

@@ -107,6 +107,12 @@ export async function listPhotos() {
   return db.photos.orderBy('createdAt').reverse().toArray();
 }
 
+// Remove one photo by its id. This deletes a row only — it does not change the
+// database structure, so the Dexie version stays the same.
+export async function deletePhoto(id) {
+  return db.photos.delete(id);
+}
+
 // ---- Backup (read-only) --------------------------------------------------
 
 // Read EVERY row from both tables, for the backup/export feature. This only

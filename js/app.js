@@ -12,7 +12,7 @@
 
 import { SECTIONS, getSection } from './data.js';
 import { startRouter } from './router.js';
-import { addResponse, listResponses, setState, getState, readAllData, addPhoto, listPhotos } from './db.js';
+import { addResponse, listResponses, setState, getState, readAllData, addPhoto, listPhotos, deletePhoto } from './db.js';
 
 // The element on the page where every screen is drawn.
 const appEl = document.getElementById('app');
@@ -951,9 +951,43 @@ async function renderPhotoPlates(section) {
 
   const addButton = document.getElementById('add-plate');
   const fileInput = document.getElementById('plate-input');
+  const listEl = document.getElementById('plates');
 
   // The button just opens the hidden file picker.
   addButton.addEventListener('click', () => fileInput.click());
+
+  // One listener on the whole list handles the little "×" remove button on any
+  // photo (now or after the list is re-drawn).
+  listEl.addEventListener('click', async (event) => {
+    const removeButton = event.target.closest('.plate-remove');
+    if (!removeButton) {
+      return; // a click somewhere other than a remove button
+    }
+    const plate = removeButton.closest('.plate');
+    if (!plate) {
+      return;
+    }
+
+    // A simple confirm so an accidental tap can't wipe a photo.
+    if (!window.confirm('Delete this photo?')) {
+      return;
+    }
+
+    await deletePhoto(Number(plate.dataset.id));
+
+    // Free this photo's object URL (in case its image hadn't finished loading,
+    // which is when it would normally be revoked), then take it off screen.
+    const image = plate.querySelector('.plate-img');
+    if (image) {
+      URL.revokeObjectURL(image.src);
+    }
+    plate.remove();
+
+    // If that was the last photo, re-draw so the empty-state line shows.
+    if (!listEl.querySelector('.plate')) {
+      await refreshPhotos();
+    }
+  });
 
   // When a photo is chosen, shrink it, save it, then refresh the list.
   fileInput.addEventListener('change', async () => {
@@ -1038,8 +1072,11 @@ async function refreshPhotos() {
     return;
   }
 
-  listEl.innerHTML = photos.map(() => `
-    <li class="plate"><img class="plate-img" alt="Saved plate" /></li>
+  listEl.innerHTML = photos.map((photo) => `
+    <li class="plate" data-id="${photo.id}">
+      <img class="plate-img" alt="Saved plate" />
+      <button class="plate-remove" type="button" aria-label="Remove photo">×</button>
+    </li>
   `).join('');
 
   // Point each image at its blob via an object URL, and free that URL as soon
