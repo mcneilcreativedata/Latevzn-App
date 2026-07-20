@@ -1112,7 +1112,7 @@ async function renderArchive(section) {
       <a class="back-link" href="#/">‹ Back</a>
       <h2 class="screen-title">${escapeHtml(section.title)}</h2>
 
-      <button id="add-archive" class="save-button" type="button">Add to Archive</button>
+      <button id="add-archive" class="save-button" type="button">Add to Inspiration</button>
       <input id="archive-input" type="file" accept="image/*" hidden />
 
       <ul id="archive" class="archive-grid"></ul>

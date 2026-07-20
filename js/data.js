@@ -66,7 +66,7 @@ export const SECTIONS = [
   },
   {
     id: 'archive',
-    title: 'Archive',
+    title: 'Inspiration',
     blurb: 'A place for older notes and finished reflections.',
   },
 ];

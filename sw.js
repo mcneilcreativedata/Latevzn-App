@@ -9,7 +9,7 @@
 // (e.g. "v1" -> "v2"). That tells phones to refresh their saved copy.
 // ============================================================================
 
-const CACHE_NAME = 'latevzn-shell-v12';
+const CACHE_NAME = 'latevzn-shell-v13';
 
 // The files that make up the app shell. These are saved when the app is
 // first opened so it can run offline afterwards.
