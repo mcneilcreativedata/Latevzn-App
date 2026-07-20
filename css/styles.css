@@ -391,6 +391,35 @@ body {
   background: rgba(0, 0, 0, 0.65);
 }
 
+/* ---- Archive: a contact sheet, roughly two across ----------------------- */
+.archive-grid {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.archive-item {
+  /* Positioning context for the remove button in the corner. */
+  position: relative;
+}
+
+.archive-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.archive-note {
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
 /* ---- What My Work Is Telling Me: item description + choice picker -------- */
 .item-desc {
   margin: 0 0 14px;

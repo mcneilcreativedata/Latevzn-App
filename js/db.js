@@ -51,6 +51,18 @@ db.version(3).stores({
   photos: '++id, createdAt',
 });
 
+// Version 4 adds a fourth table, "archive", for the Archive contact sheet. It is
+// separate from "photos" so the two boards never mix. Each row holds:
+//   ++id       an automatic, ever-increasing id
+//   createdAt  when it was saved (a timestamp), so we can sort by newest
+// The image "blob" and the short "note" are stored on the row but aren't listed
+// here because we never search by them. Listing only the new table leaves the
+// existing "responses", "states", and "photos" tables — and everything already
+// saved in them — completely untouched.
+db.version(4).stores({
+  archive: '++id, createdAt',
+});
+
 // Save a brand-new entry. This is "append-only": every call adds a new row and
 // nothing that was saved before is ever changed or removed.
 export async function addResponse({ sectionId, blockId, text }) {
@@ -111,6 +123,34 @@ export async function listPhotos() {
 // database structure, so the Dexie version stays the same.
 export async function deletePhoto(id) {
   return db.photos.delete(id);
+}
+
+// ---- Archive (the "archive" table) ---------------------------------------
+// Same shape as photos, but a separate board, and each row also carries a short
+// text note.
+
+// Save a new archive image (a shrunk image blob) with its note.
+export async function addArchiveItem({ blob, note }) {
+  return db.archive.add({
+    blob,
+    note: note || '',
+    createdAt: Date.now(),
+  });
+}
+
+// Get all archive images, newest first.
+export async function listArchive() {
+  return db.archive.orderBy('createdAt').reverse().toArray();
+}
+
+// Update just the note on one archive row (leaves the image and date as-is).
+export async function updateArchiveNote(id, note) {
+  return db.archive.update(id, { note });
+}
+
+// Remove one archive image (and its note) by its id.
+export async function deleteArchiveItem(id) {
+  return db.archive.delete(id);
 }
 
 // ---- Backup (read-only) --------------------------------------------------

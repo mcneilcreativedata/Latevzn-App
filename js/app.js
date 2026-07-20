@@ -12,7 +12,7 @@
 
 import { SECTIONS, getSection } from './data.js';
 import { startRouter } from './router.js';
-import { addResponse, listResponses, setState, getState, readAllData, addPhoto, listPhotos, deletePhoto } from './db.js';
+import { addResponse, listResponses, setState, getState, readAllData, addPhoto, listPhotos, deletePhoto, addArchiveItem, listArchive, updateArchiveNote, deleteArchiveItem } from './db.js';
 
 // The element on the page where every screen is drawn.
 const appEl = document.getElementById('app');
@@ -170,6 +170,14 @@ const PHOTO_PLATES = {
   route: 'photo-plates', // matches the id in data.js
   maxSide: 1600,         // longest side (in pixels) to shrink photos down to
   jpegQuality: 0.8,      // JPEG quality when re-saving the shrunk photo
+};
+
+// ---- The "Archive" section -----------------------------------------------
+// A contact sheet of reference images to learn from, each with a short note.
+// Reuses the Photo Plates image handling (shrinkImage) but stores into its own
+// "archive" table so the two boards never mix.
+const ARCHIVE = {
+  route: 'archive', // matches the id in data.js
 };
 
 // ---- The "How to Make Fewer Middle Photos" section -----------------------
@@ -383,6 +391,10 @@ function renderSection(id) {
   }
   if (id === PHOTO_PLATES.route) {
     renderPhotoPlates(section);
+    return;
+  }
+  if (id === ARCHIVE.route) {
+    renderArchive(section);
     return;
   }
 
@@ -1087,6 +1099,128 @@ async function refreshPhotos() {
     const objectUrl = URL.createObjectURL(photo.blob);
     image.onload = () => URL.revokeObjectURL(objectUrl);
     image.src = objectUrl;
+  });
+}
+
+// ---- Screen: Archive -----------------------------------------------------
+// A contact sheet of reference images, each with a short note. Reuses the Photo
+// Plates image handling (shrinkImage, object-URL revoke, delete + confirm) but
+// stores into the separate "archive" table.
+async function renderArchive(section) {
+  appEl.innerHTML = `
+    <section class="screen">
+      <a class="back-link" href="#/">‹ Back</a>
+      <h2 class="screen-title">${escapeHtml(section.title)}</h2>
+
+      <button id="add-archive" class="save-button" type="button">Add to Archive</button>
+      <input id="archive-input" type="file" accept="image/*" hidden />
+
+      <ul id="archive" class="archive-grid"></ul>
+    </section>
+  `;
+
+  const addButton = document.getElementById('add-archive');
+  const fileInput = document.getElementById('archive-input');
+  const listEl = document.getElementById('archive');
+
+  addButton.addEventListener('click', () => fileInput.click());
+
+  // Pick a photo → shrink it (same as Photo Plates) → save it → refresh.
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) {
+      return;
+    }
+    addButton.disabled = true;
+    try {
+      const blob = await shrinkImage(file);
+      await addArchiveItem({ blob, note: '' });
+      fileInput.value = '';
+      await refreshArchive();
+    } catch (error) {
+      console.warn('Could not save archive image:', error);
+    } finally {
+      addButton.disabled = false;
+    }
+  });
+
+  // One listener handles the "×" remove button on any archive image.
+  listEl.addEventListener('click', async (event) => {
+    const removeButton = event.target.closest('.plate-remove');
+    if (!removeButton) {
+      return;
+    }
+    const item = removeButton.closest('.archive-item');
+    if (!item) {
+      return;
+    }
+    if (!window.confirm('Delete this image?')) {
+      return;
+    }
+    await deleteArchiveItem(Number(item.dataset.id));
+    const image = item.querySelector('.archive-img');
+    if (image) {
+      URL.revokeObjectURL(image.src);
+    }
+    item.remove();
+    if (!listEl.querySelector('.archive-item')) {
+      await refreshArchive();
+    }
+  });
+
+  // One listener saves a note when its box loses focus after an edit.
+  listEl.addEventListener('change', async (event) => {
+    const noteField = event.target.closest('.archive-note');
+    if (!noteField) {
+      return;
+    }
+    const item = noteField.closest('.archive-item');
+    if (!item) {
+      return;
+    }
+    await updateArchiveNote(Number(item.dataset.id), noteField.value);
+  });
+
+  await refreshArchive();
+}
+
+// Re-draw the archive contact sheet (newest first).
+async function refreshArchive() {
+  const listEl = document.getElementById('archive');
+  if (!listEl) {
+    return;
+  }
+
+  const items = await listArchive();
+
+  if (items.length === 0) {
+    listEl.innerHTML = `
+      <li class="entries-empty">No images yet. Add one and it will appear here.</li>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = items.map(() => `
+    <li class="archive-item">
+      <img class="archive-img" alt="Saved image" />
+      <button class="plate-remove" type="button" aria-label="Remove image">×</button>
+      <textarea class="entry-input archive-note" rows="2" placeholder="Why I saved this…"></textarea>
+    </li>
+  `).join('');
+
+  const tiles = listEl.querySelectorAll('.archive-item');
+  items.forEach((item, index) => {
+    const tile = tiles[index];
+    tile.dataset.id = item.id;
+
+    const image = tile.querySelector('.archive-img');
+    const objectUrl = URL.createObjectURL(item.blob);
+    image.onload = () => URL.revokeObjectURL(objectUrl);
+    image.src = objectUrl;
+
+    // Fill the note box from the saved value (set as a property to avoid any
+    // HTML-escaping edge cases in the note text).
+    tile.querySelector('.archive-note').value = item.note || '';
   });
 }
 
