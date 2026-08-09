@@ -12,7 +12,7 @@
 
 import { SECTIONS, getSection } from './data.js';
 import { startRouter } from './router.js';
-import { addResponse, listResponses, setState, getState, readAllData, addPhoto, listPhotos, deletePhoto, addArchiveItem, listArchive, updateArchiveNote, deleteArchiveItem } from './db.js';
+import { addResponse, listResponses, setState, getState, readAllData, addPhoto, listPhotos, deletePhoto, updatePhotoCaption, addArchiveItem, listArchive, updateArchiveNote, deleteArchiveItem } from './db.js';
 
 // The element on the page where every screen is drawn.
 const appEl = document.getElementById('app');
@@ -1001,6 +1001,19 @@ async function renderPhotoPlates(section) {
     }
   });
 
+  // One listener saves a photo's caption when its box loses focus after an edit.
+  listEl.addEventListener('change', async (event) => {
+    const noteField = event.target.closest('.plate-note');
+    if (!noteField) {
+      return;
+    }
+    const plate = noteField.closest('.plate');
+    if (!plate) {
+      return;
+    }
+    await updatePhotoCaption(Number(plate.dataset.id), noteField.value);
+  });
+
   // When a photo is chosen, shrink it, save it, then refresh the list.
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files && fileInput.files[0];
@@ -1088,17 +1101,23 @@ async function refreshPhotos() {
     <li class="plate" data-id="${photo.id}">
       <img class="plate-img" alt="Saved plate" />
       <button class="plate-remove" type="button" aria-label="Remove photo">×</button>
+      <textarea class="entry-input plate-note" rows="2" placeholder="What I notice now" aria-label="What I notice now"></textarea>
     </li>
   `).join('');
 
-  // Point each image at its blob via an object URL, and free that URL as soon
-  // as the browser has painted the image, so no URLs are leaked.
-  const images = listEl.querySelectorAll('.plate-img');
+  // For each plate: point its image at the blob via an object URL (freed as soon
+  // as the browser has painted it, so no URLs leak) and fill its caption box from
+  // the saved value (empty for photos that don't have a caption yet).
+  const tiles = listEl.querySelectorAll('.plate');
   photos.forEach((photo, index) => {
-    const image = images[index];
+    const tile = tiles[index];
+
+    const image = tile.querySelector('.plate-img');
     const objectUrl = URL.createObjectURL(photo.blob);
     image.onload = () => URL.revokeObjectURL(objectUrl);
     image.src = objectUrl;
+
+    tile.querySelector('.plate-note').value = photo.caption || '';
   });
 }
 

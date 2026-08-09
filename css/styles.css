@@ -415,7 +415,8 @@ body {
   background: var(--surface);
 }
 
-.archive-note {
+.archive-note,
+.plate-note {
   margin-top: 6px;
   font-size: 0.85rem;
 }

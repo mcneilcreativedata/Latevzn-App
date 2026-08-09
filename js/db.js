@@ -119,6 +119,13 @@ export async function listPhotos() {
   return db.photos.orderBy('createdAt').reverse().toArray();
 }
 
+// Save/replace the caption on one photo's existing row (leaves the image and date
+// as-is). Adding this field to a row does not change the database structure, so
+// the Dexie version stays the same.
+export async function updatePhotoCaption(id, caption) {
+  return db.photos.update(id, { caption });
+}
+
 // Remove one photo by its id. This deletes a row only — it does not change the
 // database structure, so the Dexie version stays the same.
 export async function deletePhoto(id) {
