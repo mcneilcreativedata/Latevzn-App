@@ -1,36 +1,25 @@
 /* ==========================================================================
    Latevzn — styles
    --------------------------------------------------------------------------
-   A clean, neutral, mobile-first look. The colours are defined as
-   "variables" near the top so they are easy to change in one place.
-   The app automatically follows the phone's light or dark setting.
+   A black gallery-wall look: black background, white text, gray accents, and
+   thin hairline borders. Photos are the only real colour on screen. The colours
+   are defined as "variables" near the top so they are easy to change in one
+   place. This is a committed single look — it does not follow the phone's
+   light/dark setting.
    ========================================================================== */
 
-/* ---- Colour palette: light mode (the default) --------------------------- */
+/* ---- Colour palette: one fixed dark brand ------------------------------- */
 :root {
-  --bg: #faf9f7;          /* page background */
-  --surface: #ffffff;     /* cards and panels */
-  --text: #1d1b18;        /* main text */
-  --text-muted: #6c6760;  /* softer secondary text */
-  --border: #e6e2dc;      /* hairline borders */
-  --accent: #8a6d4b;      /* warm, neutral highlight */
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --bg: #000000;          /* page background — pure black */
+  --surface: #000000;     /* panels sit on black; defined by hairlines, not fills */
+  --text: #ffffff;        /* main text */
+  --text-muted: #9a9a9a;  /* softer secondary text (gray) */
+  --border: rgba(255, 255, 255, 0.14); /* thin hairline borders */
+  --accent: #ffffff;      /* emphasis is white — no colour but the photos */
+  --shadow: none;         /* no heavy boxes */
 
   --max-width: 680px;     /* keeps lines readable on big screens */
-  --radius: 14px;
-}
-
-/* ---- Colour palette: dark mode (used automatically on dark phones) ------- */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16151a;
-    --surface: #211f27;
-    --text: #f2efe9;
-    --text-muted: #a7a29b;
-    --border: #322f3a;
-    --accent: #c9a87c;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  }
+  --radius: 2px;          /* near-sharp, gallery-clean edges */
 }
 
 /* ---- Base resets --------------------------------------------------------- */
@@ -97,46 +86,133 @@ body {
   margin: 0 0 20px;
 }
 
-/* ---- Home screen: section list ------------------------------------------ */
-.card-list {
-  list-style: none;
+/* ---- Home screen: photo carousel ---------------------------------------- */
+/* A full-bleed band across the top of the home screen. */
+.home-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  /* Hide the scrollbar; swiping is the interaction. */
+  scrollbar-width: none;
+  margin: 0 0 12px;
+  border-radius: var(--radius);
+}
+
+.home-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.home-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+}
+
+.home-slide-img {
+  display: block;
+  width: 100%;
+  height: 62vw;
+  max-height: 360px;
+  object-fit: cover;
+  background: #000;
+}
+
+/* The no-photos fallback: a plain black header band, no image. */
+.home-header-empty {
+  height: 62vw;
+  max-height: 360px;
+  background: #000;
+  border-bottom: 1px solid var(--border);
+  margin: 0 0 12px;
+}
+
+/* Small dots under the carousel showing which plate is in view. */
+.home-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin: 0 0 24px;
+}
+
+.home-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  transition: background 0.15s ease;
+}
+
+.home-dot.is-active {
+  background: var(--text);
+}
+
+/* ---- Home screen: chapter grid ------------------------------------------ */
+.home-grid {
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
-.card-link {
+.home-tile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
-  padding: 18px 18px;
-  background: var(--surface);
+  min-height: 128px;
+  padding: 22px 14px;
+  /* Thin hairline outline, not a heavy filled box. */
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   color: var(--text);
   text-decoration: none;
-  /* A comfortable tap target for fingers. */
-  min-height: 56px;
-  transition: transform 0.08s ease, border-color 0.15s ease;
+  text-align: center;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.card-link:active {
-  transform: scale(0.99);
+.home-tile:active {
+  background: #0d0d0d;
   border-color: var(--accent);
 }
 
-.card-title {
-  font-size: 1.05rem;
-  font-weight: 500;
+.home-tile-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--text);
 }
 
-.card-arrow {
+.home-tile-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.home-tile-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+/* ---- Home screen: quiet Backup link at the very bottom ------------------ */
+.home-backup {
+  display: block;
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--text-muted);
-  font-size: 1.4rem;
-  line-height: 1;
+  text-decoration: none;
+}
+
+.home-backup:active {
+  color: var(--text);
 }
 
 /* ---- Section placeholder screen ----------------------------------------- */
@@ -150,8 +226,11 @@ body {
 
 .screen-title {
   margin: 0 0 8px;
-  font-size: 1.6rem;
-  font-weight: 650;
+  font-size: 1.3rem;
+  font-weight: 600;
+  /* Every screen title reads as a gallery label. */
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
 
 .placeholder {
@@ -210,18 +289,22 @@ body {
   padding: 12px 22px;
   font: inherit;
   font-weight: 600;
-  color: #fff;
-  background: var(--accent);
-  border: none;
+  /* Quiet outline button — hairline, not a filled block. */
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   /* A comfortable tap target for fingers. */
   min-height: 48px;
-  transition: transform 0.08s ease, opacity 0.15s ease;
+  transition: transform 0.08s ease, border-color 0.15s ease;
 }
 
 .save-button:active {
   transform: scale(0.99);
+  border-color: var(--accent);
 }
 
 .save-button:disabled {

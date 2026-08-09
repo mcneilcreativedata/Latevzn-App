@@ -299,38 +299,112 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// ---- Screen: Home --------------------------------------------------------
-// Draws the list of sections. Each one links to its placeholder screen.
-function renderHome() {
-  const items = SECTIONS.map((section) => `
-    <li class="card">
-      <a class="card-link" href="#/section/${section.id}">
-        <span class="card-title">${escapeHtml(section.title)}</span>
-        <span class="card-arrow" aria-hidden="true">›</span>
-      </a>
-    </li>
-  `).join('');
+// ---- Home-screen icons ---------------------------------------------------
+// Small, simple line icons for the chapter tiles. Each SECTION names one of
+// these (in js/data.js). They are inline SVG so they work offline with no
+// extra files. All are monochrome (they inherit the tile's white text colour),
+// so photos stay the only colour on screen.
+const ICON_ATTRS =
+  'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+const ICONS = {
+  camera: `<svg ${ICON_ATTRS}><path d="M3.5 8.5A1.5 1.5 0 0 1 5 7h2l1.4-2h7.2L17 7h2a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="13" r="3.2"/></svg>`,
+  heart: `<svg ${ICON_ATTRS}><path d="M12 20C7 16.5 4 13.6 4 9.9 4 7.5 5.9 6 7.9 6c1.4 0 2.7.7 3.4 1.9l.7 1.2.7-1.2C13.4 6.7 14.7 6 16.1 6 18.1 6 20 7.5 20 9.9c0 3.7-3 6.6-8 10.1Z"/></svg>`,
+  message: `<svg ${ICON_ATTRS}><path d="M4 6a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H9l-5 4z"/></svg>`,
+  image: `<svg ${ICON_ATTRS}><rect x="4" y="5" width="16" height="14" rx="1.5"/><circle cx="9" cy="10" r="1.5"/><path d="M6 17l4.5-4 3 2.5L16.5 12 20 15.5"/></svg>`,
+  scissors: `<svg ${ICON_ATTRS}><circle cx="7" cy="7" r="2"/><circle cx="7" cy="17" r="2"/><path d="M9 8.3 20 17M9 15.7 20 7"/></svg>`,
+  book: `<svg ${ICON_ATTRS}><path d="M6 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6.5A1.5 1.5 0 0 1 5 18.5V5.5A1.5 1.5 0 0 1 6.5 4Z"/><path d="M5 16.5A1.5 1.5 0 0 1 6.5 15H18"/></svg>`,
+  eye: `<svg ${ICON_ATTRS}><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>`,
+  magnet: `<svg ${ICON_ATTRS}><path d="M6 4v7a6 6 0 0 0 12 0V4"/><path d="M4.5 4H9v3.5H4.5zM15 4h4.5v3.5H15z"/></svg>`,
+  flask: `<svg ${ICON_ATTRS}><path d="M9.5 3h5M11 3v6l-4.6 8A1.4 1.4 0 0 0 7.7 19h8.6a1.4 1.4 0 0 0 1.2-2L13 9V3"/><path d="M8 15h8"/></svg>`,
+  calendar: `<svg ${ICON_ATTRS}><rect x="4" y="5" width="16" height="15" rx="1.5"/><path d="M4 9.5h16M8 3v4M16 3v4"/></svg>`,
+  star: `<svg ${ICON_ATTRS}><path d="M12 3.5l2.6 5.5 6 .8-4.4 4.1 1.1 6L12 17l-5.3 2.9 1.1-6L3.4 9.8l6-.8z"/></svg>`,
+};
 
-  // A separate "Backup" card, shown last. It isn't a guide chapter, so it is
-  // not part of the SECTIONS list above — we add it here on its own.
-  const backupCard = `
-    <li class="card">
-      <a class="card-link" href="#/section/backup">
-        <span class="card-title">Backup</span>
-        <span class="card-arrow" aria-hidden="true">›</span>
-      </a>
-    </li>
-  `;
+// Return the SVG for a named icon (falls back to a simple dot if unknown).
+function renderIcon(name) {
+  return ICONS[name] || `<svg ${ICON_ATTRS}><circle cx="12" cy="12" r="7"/></svg>`;
+}
+
+// Shuffle an array in place (Fisher–Yates) and return it. Used so the home
+// carousel shows the plates in a fresh random order each time home opens.
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+// ---- Screen: Home --------------------------------------------------------
+// A photo carousel of the person's Photo Plates on top, then the chapters as a
+// two-across grid of icon tiles, with a small quiet Backup link at the bottom.
+async function renderHome() {
+  const photos = await listPhotos();
+  const shuffled = shuffle(photos.slice()); // random order each open
+
+  // Top band: a swipeable carousel of plates, or a plain black header when
+  // there are no plates yet.
+  let headerHtml;
+  if (shuffled.length) {
+    const slides = shuffled.map(() => `
+      <div class="home-slide"><img class="home-slide-img" alt="Photo plate" /></div>
+    `).join('');
+    const dots = shuffled.map((_, i) => `
+      <span class="home-dot${i === 0 ? ' is-active' : ''}"></span>
+    `).join('');
+    headerHtml = `
+      <div class="home-carousel" id="home-carousel">${slides}</div>
+      <div class="home-dots" id="home-dots">${dots}</div>
+    `;
+  } else {
+    headerHtml = `<div class="home-header-empty"></div>`;
+  }
+
+  // The chapters, in their existing order, as icon tiles. Each links to the
+  // same section screen as before — only the presentation changes.
+  const tiles = SECTIONS.map((section) => `
+    <a class="home-tile" href="#/section/${section.id}">
+      <span class="home-tile-icon">${renderIcon(section.icon)}</span>
+      <span class="home-tile-label">${escapeHtml(section.title)}</span>
+    </a>
+  `).join('');
 
   appEl.innerHTML = `
     <section class="screen">
-      <p class="intro">Your photography reflection journal. Choose a section to begin.</p>
-      <ul class="card-list">
-        ${items}
-        ${backupCard}
-      </ul>
+      ${headerHtml}
+      <nav class="home-grid">${tiles}</nav>
+      <a class="home-backup" href="#/section/backup">Backup</a>
     </section>
   `;
+
+  if (!shuffled.length) {
+    return;
+  }
+
+  // Point each slide at its blob via an object URL, freed once painted so no
+  // URLs leak (same approach as the Photo Plates screen).
+  const carousel = document.getElementById('home-carousel');
+  const imgs = carousel.querySelectorAll('.home-slide-img');
+  shuffled.forEach((photo, i) => {
+    const img = imgs[i];
+    const objectUrl = URL.createObjectURL(photo.blob);
+    img.onload = () => URL.revokeObjectURL(objectUrl);
+    img.src = objectUrl;
+  });
+
+  // Light up the dot for whichever plate is currently swiped into view.
+  const dots = document.getElementById('home-dots').querySelectorAll('.home-dot');
+  let active = 0;
+  carousel.addEventListener('scroll', () => {
+    const width = carousel.clientWidth || 1;
+    const i = Math.round(carousel.scrollLeft / width);
+    if (i !== active && i >= 0 && i < dots.length) {
+      dots[active].classList.remove('is-active');
+      dots[i].classList.add('is-active');
+      active = i;
+    }
+  }, { passive: true });
 }
 
 // ---- Screen: Section placeholder -----------------------------------------
