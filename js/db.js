@@ -169,3 +169,73 @@ export async function readAllData() {
   const states = await db.states.toArray();
   return { responses, states };
 }
+
+// ---- Restore (merge, never wipe) -----------------------------------------
+
+// Merge a backup's rows back into the existing "responses" and "states" tables.
+// This is ADDITIVE ONLY: it never clears either table, so nothing already saved
+// is deleted, and it never touches the "photos" or "archive" tables. Because it
+// only writes into tables that already exist, the Dexie version is unchanged.
+//
+//   - states:    each { key, value } is written update-in-place (setState/put),
+//                so an existing key is replaced rather than duplicated.
+//   - responses: each entry is ADDED as a new row, but only if an identical one
+//                (same sectionId, blockId, createdAt and text) isn't already
+//                there — so running restore twice never makes duplicates. The
+//                old id is NOT reused; the table assigns a fresh one.
+//
+// Returns counts so the screen can report what happened.
+export async function restoreData({ responses = [], states = [] } = {}) {
+  let statesSet = 0;
+  let responsesAdded = 0;
+  let responsesSkipped = 0;
+
+  // States: update-in-place, one key at a time. Reuses setState() above.
+  for (const entry of states) {
+    if (!entry || typeof entry.key !== 'string') {
+      continue; // ignore anything that isn't a real key/value row
+    }
+    await setState(entry.key, entry.value);
+    statesSet += 1;
+  }
+
+  // Responses: append-only, skipping ones that already exist.
+  for (const entry of responses) {
+    if (
+      !entry ||
+      typeof entry.sectionId !== 'string' ||
+      typeof entry.blockId !== 'string' ||
+      typeof entry.text !== 'string' ||
+      typeof entry.createdAt !== 'number'
+    ) {
+      continue; // ignore malformed entries
+    }
+
+    const duplicates = await db.responses
+      .where('sectionId')
+      .equals(entry.sectionId)
+      .and(
+        (row) =>
+          row.blockId === entry.blockId &&
+          row.createdAt === entry.createdAt &&
+          row.text === entry.text
+      )
+      .count();
+
+    if (duplicates > 0) {
+      responsesSkipped += 1;
+      continue;
+    }
+
+    // Note: no id is passed, so Dexie assigns a new one.
+    await db.responses.add({
+      sectionId: entry.sectionId,
+      blockId: entry.blockId,
+      text: entry.text,
+      createdAt: entry.createdAt,
+    });
+    responsesAdded += 1;
+  }
+
+  return { responsesAdded, responsesSkipped, statesSet };
+}

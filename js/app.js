@@ -12,7 +12,7 @@
 
 import { SECTIONS, getSection } from './data.js';
 import { startRouter } from './router.js';
-import { addResponse, listResponses, setState, getState, readAllData, addPhoto, listPhotos, deletePhoto, updatePhotoCaption, addArchiveItem, listArchive, updateArchiveNote, deleteArchiveItem } from './db.js';
+import { addResponse, listResponses, setState, getState, readAllData, restoreData, addPhoto, listPhotos, deletePhoto, updatePhotoCaption, addArchiveItem, listArchive, updateArchiveNote, deleteArchiveItem } from './db.js';
 
 // The element on the page where every screen is drawn.
 const appEl = document.getElementById('app');
@@ -714,6 +714,17 @@ async function renderBackup() {
       <p class="intro">Save a copy of everything you've written to a file you can keep off your phone. This only reads your data — nothing is changed or deleted.</p>
       <button id="backup-button" class="save-button" type="button" disabled>Back up my data</button>
       <p class="save-hint"><span class="save-status" id="backup-status"></span></p>
+
+      <h3 class="prompt-label">Restore from backup</h3>
+      <p class="intro">Have a backup file? Restoring adds your saved answers and checked options back into the app. It never deletes anything already here, and your photos and Inspiration grid aren't touched.</p>
+      <button id="restore-button" class="save-button" type="button">Choose a backup file…</button>
+      <input id="restore-input" type="file" accept="application/json,.json" hidden />
+      <div id="restore-confirm" hidden>
+        <p class="intro" id="restore-summary"></p>
+        <button id="restore-confirm-button" class="save-button" type="button">Confirm restore</button>
+        <button id="restore-cancel-button" class="save-button" type="button">Cancel</button>
+      </div>
+      <p class="save-hint"><span class="save-status" id="restore-status"></span></p>
     </section>
   `;
 
@@ -727,6 +738,8 @@ async function renderBackup() {
   button.addEventListener('click', () => {
     exportBackup(backupData);
   });
+
+  wireRestore();
 }
 
 // Build the backup file and hand it to the phone's share sheet, or download it
@@ -795,6 +808,133 @@ function setBackupStatus(text) {
   if (statusEl) {
     statusEl.textContent = text;
   }
+}
+
+// ---- Restore from backup -------------------------------------------------
+// Reads a backup .json the user picks, checks it really is a Latevzn backup,
+// asks for confirmation, then MERGES its answers and settings back in. It only
+// ever adds; it never clears a table, so nothing already saved is lost. The
+// actual writing lives in restoreData() in db.js (responses + states only).
+
+// Holds the validated backup between "file chosen" and "Confirm restore" tapped.
+let pendingRestore = null;
+
+// Check a parsed file looks like a Latevzn backup before we touch the database.
+// Returns the normalised { responses, states } arrays, or null if it doesn't
+// look right (in which case nothing should be written).
+function readLatevznBackup(parsed) {
+  if (!parsed || typeof parsed !== 'object') {
+    return null;
+  }
+  if (parsed.app !== 'Latevzn' || parsed.schemaVersion !== 1) {
+    return null;
+  }
+  return {
+    responses: Array.isArray(parsed.responses) ? parsed.responses : [],
+    states: Array.isArray(parsed.states) ? parsed.states : [],
+  };
+}
+
+function setRestoreStatus(text) {
+  const statusEl = document.getElementById('restore-status');
+  if (statusEl) {
+    statusEl.textContent = text;
+  }
+}
+
+// Hide the confirm panel and forget any pending file.
+function resetRestoreConfirm() {
+  pendingRestore = null;
+  const confirmBox = document.getElementById('restore-confirm');
+  if (confirmBox) {
+    confirmBox.hidden = true;
+  }
+}
+
+function wireRestore() {
+  const chooseButton = document.getElementById('restore-button');
+  const fileInput = document.getElementById('restore-input');
+  const confirmBox = document.getElementById('restore-confirm');
+  const summaryEl = document.getElementById('restore-summary');
+  const confirmButton = document.getElementById('restore-confirm-button');
+  const cancelButton = document.getElementById('restore-cancel-button');
+
+  // Tapping the button opens the phone's file picker.
+  chooseButton.addEventListener('click', () => {
+    resetRestoreConfirm();
+    setRestoreStatus('');
+    fileInput.click();
+  });
+
+  // A file was chosen: read it, validate it, and (if good) show the confirm step.
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    // Clear the input so picking the same file again still fires "change".
+    fileInput.value = '';
+    if (!file) {
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch (error) {
+      resetRestoreConfirm();
+      setRestoreStatus("That file couldn't be read as a backup. Please choose a Latevzn backup .json file.");
+      return;
+    }
+
+    const backup = readLatevznBackup(parsed);
+    if (!backup) {
+      resetRestoreConfirm();
+      setRestoreStatus("That doesn't look like a Latevzn backup file. Nothing was changed.");
+      return;
+    }
+
+    // Valid — remember it and ask the user to confirm before writing anything.
+    pendingRestore = backup;
+    const answers = backup.responses.length;
+    const settings = backup.states.length;
+    summaryEl.textContent =
+      `This backup has ${answers} ${answers === 1 ? 'answer' : 'answers'} and ` +
+      `${settings} saved ${settings === 1 ? 'setting' : 'settings'}. Restoring adds them ` +
+      `to what's already here — nothing is deleted.`;
+    confirmBox.hidden = false;
+    setRestoreStatus('');
+  });
+
+  // Confirm: do the merge, then report what happened.
+  confirmButton.addEventListener('click', async () => {
+    if (!pendingRestore) {
+      return;
+    }
+    const backup = pendingRestore;
+    confirmButton.disabled = true;
+    try {
+      const result = await restoreData(backup);
+      resetRestoreConfirm();
+      const skipped =
+        result.responsesSkipped > 0
+          ? ` (skipped ${result.responsesSkipped} already present)`
+          : '';
+      setRestoreStatus(
+        `Restored: added ${result.responsesAdded} ${result.responsesAdded === 1 ? 'answer' : 'answers'}${skipped}, ` +
+          `updated ${result.statesSet} ${result.statesSet === 1 ? 'setting' : 'settings'}. ` +
+          `Open a section to see your restored answers.`
+      );
+    } catch (error) {
+      console.warn('Restore failed:', error);
+      setRestoreStatus('Something went wrong while restoring. Nothing was deleted; please try again.');
+    } finally {
+      confirmButton.disabled = false;
+    }
+  });
+
+  // Cancel: forget the file without writing anything.
+  cancelButton.addEventListener('click', () => {
+    resetRestoreConfirm();
+    setRestoreStatus('Restore cancelled. Nothing was changed.');
+  });
 }
 
 // Build a list of saved checkboxes. Each item is { key, label }; the key is the
