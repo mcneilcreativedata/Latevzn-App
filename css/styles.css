@@ -55,8 +55,9 @@ body {
 
 .app-title {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 14px 20px;
@@ -64,29 +65,27 @@ body {
   text-decoration: none;
 }
 
-/* The brand logo. Sized to sit balanced in the header, not huge. */
+/* The brand logo. Sized larger to anchor the header, still balanced on a phone. */
 .app-logo {
   display: block;
-  height: 44px;
+  height: 64px;
   width: auto;
 }
 
-/* Text fallback shown by onerror if the logo image can't load. */
+/* Text fallback shown by onerror if the logo image can't load. Sits inline
+   next to the subtitle in the row layout. */
 .app-wordmark {
-  display: block;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text);
 }
 
-/* Small, quiet subtitle under the logo. */
+/* Quiet subtitle sitting to the right of the logo. */
 .app-subtitle {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.62rem;
+  font-size: 0.85rem;
   font-weight: 500;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-muted);
 }

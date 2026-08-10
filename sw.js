@@ -9,7 +9,7 @@
 // (e.g. "v1" -> "v2"). That tells phones to refresh their saved copy.
 // ============================================================================
 
-const CACHE_NAME = 'latevzn-shell-v16';
+const CACHE_NAME = 'latevzn-shell-v17';
 
 // The files that make up the app shell. These are saved when the app is
 // first opened so it can run offline afterwards.
@@ -27,6 +27,10 @@ const SHELL_FILES = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
+  // Installed-app icon (iOS home screen + PWA manifest). Space-free name, so it
+  // is safe to precache here (unlike the header logo, which has spaces and is
+  // cached at runtime instead).
+  './app-icon.png',
 ];
 
 // ---- Install: save the shell files --------------------------------------
