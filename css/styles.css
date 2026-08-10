@@ -54,15 +54,41 @@ body {
 }
 
 .app-title {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 16px 20px;
-  font-size: 1.35rem;
+  padding: 14px 20px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* The brand logo. Sized to sit balanced in the header, not huge. */
+.app-logo {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+
+/* Text fallback shown by onerror if the logo image can't load. */
+.app-wordmark {
+  display: block;
+  font-size: 1.3rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text);
-  text-decoration: none;
+}
+
+/* Small, quiet subtitle under the logo. */
+.app-subtitle {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 /* ---- Main content area --------------------------------------------------- */
@@ -138,12 +164,14 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.28);
+  /* Mustard yellow, faded for the inactive dots. */
+  background: rgba(225, 173, 1, 0.4);
   transition: background 0.15s ease;
 }
 
 .home-dot.is-active {
-  background: var(--text);
+  /* Solid mustard for the plate currently in view. */
+  background: #e1ad01;
 }
 
 /* ---- Home screen: chapter grid ------------------------------------------ */
@@ -219,7 +247,8 @@ body {
 .back-link {
   display: inline-block;
   margin-bottom: 12px;
-  color: var(--accent);
+  /* Mustard yellow back control on every screen. */
+  color: #e1ad01;
   text-decoration: none;
   font-weight: 500;
 }

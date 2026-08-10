@@ -26,7 +26,14 @@
 </head>
 <body>
   <header class="app-header">
-    <a class="app-title" href="#/">Latevzn</a>
+    <a class="app-title" href="#/" aria-label="Latevzn — Field Guide">
+      <!-- The logo filename has spaces, so the src is URL-encoded (%20). If the
+           image ever fails to load, onerror swaps in the "LATEVZN" wordmark so
+           the header never looks broken. -->
+      <img class="app-logo" src="./LATE%20VZN%20LOGO.png" alt="LATEVZN"
+           onerror="this.onerror=null;this.insertAdjacentHTML('afterend','<span class=&quot;app-wordmark&quot;>LATEVZN</span>');this.remove();" />
+      <span class="app-subtitle">Field Guide</span>
+    </a>
   </header>
 
   <!-- Every screen is drawn inside here by js/app.js. -->

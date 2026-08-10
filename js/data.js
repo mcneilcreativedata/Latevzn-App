@@ -18,7 +18,7 @@
 export const SECTIONS = [
   {
     id: 'your-working-method',
-    title: 'Your Working Method',
+    title: 'My Working Method',
     blurb: 'How you actually make pictures — your habits, tools, and process.',
     icon: 'camera',
   },
